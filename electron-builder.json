@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.toolimage.app",
+  "productName": "Công cụ tạo ảnh",
+  "copyright": "Copyright © 2026",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/tool-image/browser/**/*",
+    "electron/**/*"
+  ],
+  "extraResources": [],
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/favicon.ico"
+  },
+  "portable": {
+    "artifactName": "CongCuTaoAnh-${version}.exe"
+  }
+}

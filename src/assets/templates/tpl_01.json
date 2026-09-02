@@ -1,0 +1,24 @@
+{
+  "templateId": "tpl_01",
+  "name": "Mẫu đỏ - vàng trang trọng",
+  "thumbnail": "assets/templates/tpl_01_thumb.svg",
+  "canvas": { "width": 1080, "height": 1350 },
+  "background": { "type": "user-image", "fitMode": "cover" },
+  "textDefault": {
+    "content": "TIÊU ĐỀ TUYÊN TRUYỀN",
+    "x": 540,
+    "y": 1100,
+    "align": "center",
+    "fontFamily": "Montserrat-Bold",
+    "maxFontSize": 64,
+    "minFontSize": 24,
+    "color": "auto",
+    "strokeColor": "auto",
+    "strokeWidth": 2
+  },
+  "decorations": {
+    "borderColor": "#D4AF37",
+    "borderWidth": 8,
+    "overlayGradient": "rgba(139,0,0,0.3)"
+  }
+}
