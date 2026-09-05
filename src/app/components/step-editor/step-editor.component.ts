@@ -1,4 +1,4 @@
-﻿import {
+import {
   Component,
   output,
   inject,
@@ -7,13 +7,16 @@
   ElementRef,
   afterNextRender,
   ChangeDetectionStrategy,
+  effect,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TemplateService } from '../../services/template.service';
 import { CanvasService } from '../../services/canvas.service';
 import { ImageService } from '../../services/image.service';
 import { FileService } from '../../services/file.service';
-import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-state.service';
+import { FontService } from '../../services/font.service';
+import { EditorStateService } from '../../services/editor-state.service';
+import { TextBlock } from '../../models/template.model';
 
 @Component({
   selector: 'app-step-editor',
@@ -46,20 +49,28 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
 
         <!-- Controls Panel -->
         <div class="controls-panel">
-          <h3 class="panel-title">Bước 2: Nhập nội dung</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Chỉnh sửa chữ trên hình</h3>
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="onSaveProjectClick()"
+              title="Lưu bản thiết kế này để mở lại chỉnh sửa sau"
+              type="button"
+            >
+              💾 Lưu bản thảo
+            </button>
+          </div>
 
-          <!-- Upload Image -->
+          <!-- Upload Image Section -->
           <div class="control-group">
             <label class="control-label">1. Ảnh nền</label>
-            <div class="button-group-vertical">
-              <button
-                class="btn btn-primary upload-btn"
-                (click)="onSelectImageClick(fileInput)"
-                type="button"
-              >
-                📷 {{ editorState.hasImage() ? 'Đổi ảnh khác' : 'Tải ảnh nền lên' }}
-              </button>
-            </div>
+            <button
+              class="btn btn-primary upload-btn"
+              (click)="onSelectImageClick(fileInput)"
+              type="button"
+            >
+              📷 {{ editorState.hasImage() ? 'Đổi ảnh khác' : 'Tải ảnh nền lên' }}
+            </button>
             <input
               #fileInput
               type="file"
@@ -74,57 +85,121 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
             }
           </div>
 
-          <!-- Text Input -->
+          <!-- Text Blocks Manager -->
           <div class="control-group">
-            <label class="control-label" for="textInput">2. Tiêu đề / Nội dung</label>
-            <textarea
-              id="textInput"
-              class="text-input"
-              placeholder="Nhập tiêu đề hoặc khẩu hiệu..."
-              [ngModel]="editorState.userText()"
-              (ngModelChange)="onTextChanged($event)"
-              rows="3"
-            ></textarea>
+            <div class="label-with-action">
+              <label class="control-label">2. Các dòng tiêu đề & nội dung</label>
+              <button
+                class="btn btn-sm btn-primary add-block-btn"
+                (click)="onAddSubtitle()"
+                type="button"
+              >
+                + Thêm tiêu đề phụ
+              </button>
+            </div>
+
+            <!-- List of Text Block Cards -->
+            <div class="blocks-list">
+              @for (block of editorState.textBlocks(); track block.id) {
+                <div
+                  class="block-card"
+                  [class.active]="editorState.activeBlockId() === block.id"
+                  (click)="onSelectBlock(block.id)"
+                >
+                  <div class="block-card-header">
+                    <span class="block-type-badge">{{ block.label }}</span>
+                    @if (block.removable) {
+                      <button
+                        class="btn-icon delete-btn"
+                        (click)="onRemoveBlock(block.id, $event)"
+                        title="Xóa dòng chữ này"
+                        type="button"
+                      >
+                        🗑️
+                      </button>
+                    }
+                  </div>
+
+                  <textarea
+                    class="text-input"
+                    rows="2"
+                    placeholder="Nhập nội dung chữ..."
+                    [ngModel]="block.content"
+                    (ngModelChange)="onBlockContentChanged(block.id, $event)"
+                    (click)="$event.stopPropagation()"
+                  ></textarea>
+
+                  <!-- Controls for active block -->
+                  @if (editorState.activeBlockId() === block.id) {
+                    <div class="block-controls-body">
+                      <!-- Font Size Slider -->
+                      <div class="size-slider-group">
+                        <span class="slider-label">Cỡ chữ: {{ block.fontSize }}px</span>
+                        <input
+                          type="range"
+                          class="slider-input"
+                          [min]="block.minFontSize"
+                          [max]="block.maxFontSize"
+                          [ngModel]="block.fontSize"
+                          (ngModelChange)="onBlockSizeChanged(block.id, $event)"
+                          (click)="$event.stopPropagation()"
+                        />
+                      </div>
+
+                      <!-- Alignment & Quick Actions -->
+                      <div class="action-buttons-row">
+                        <button
+                          class="btn btn-sm btn-secondary"
+                          (click)="onCenterBlock(block.id, $event)"
+                          title="Căn chính giữa chiều ngang ảnh"
+                          type="button"
+                        >
+                          ↔️ Căn giữa ảnh
+                        </button>
+                        <button
+                          class="btn btn-sm btn-secondary"
+                          (click)="onResetBlockPosition(block, $event)"
+                          title="Khôi phục lại vị trí mặc định ban đầu"
+                          type="button"
+                        >
+                          ↩️ Vị trí mẫu
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
           </div>
 
-          <!-- Font Style Selector -->
+          <!-- Font Style Selector (applies to active block) -->
           <div class="control-group">
-            <label class="control-label">3. Kiểu chữ</label>
-            <div class="font-options-grid">
-              @for (font of fontOptions; track font.id) {
+            <label class="control-label">3. Kiểu chữ tiếng Việt</label>
+            <div class="font-presets-grid">
+              @for (font of fontService.getPresets(); track font.id) {
                 <button
                   type="button"
-                  class="font-option-btn"
-                  [class.active]="editorState.selectedFontFamily() === font.fontFamily"
+                  class="font-preset-card"
+                  [class.active]="editorState.activeBlock()?.fontFamily === font.fontFamily"
                   (click)="onFontSelected(font.fontFamily)"
                 >
-                  {{ font.name }}
+                  <span class="preset-name">{{ font.name }}</span>
+                  <span class="preset-desc">{{ font.description }}</span>
                 </button>
               }
             </div>
           </div>
 
-          <!-- Reset Position Button -->
-          <div class="control-group">
-            <button
-              class="btn btn-secondary"
-              (click)="onResetPosition()"
-              type="button"
-            >
-              ↩ Khôi phục vị trí mặc định
-            </button>
-          </div>
-
-          <!-- Error Message -->
-          @if (errorMessage()) {
-            <div class="error-message">
-              ⚠️ {{ errorMessage() }}
+          <!-- Error / Success Notification -->
+          @if (feedbackMessage()) {
+            <div class="feedback-alert" [class.success]="isFeedbackSuccess()">
+              {{ feedbackMessage() }}
             </div>
           }
 
           <!-- Guide / Tip Box -->
           <div class="tip-box">
-            💡 <strong>Mẹo:</strong> Bạn có thể dùng chuột kéo thả trực tiếp tiêu đề trên ảnh. Đường kẻ xanh sẽ tự động hiện ra giúp bạn canh chuẩn giữa ảnh.
+            💡 <strong>Mẹo:</strong> Bạn có thể dùng chuột bấm trực tiếp vào chữ trên ảnh để kéo tới vị trí mong muốn. Đường kẻ xanh sẽ tự động gióng thẳng hàng giữa ảnh.
           </div>
         </div>
       </div>
@@ -167,7 +242,7 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
       justify-content: center;
       min-width: 0;
       position: relative;
-      background: #eef0f4;
+      background: #eef2f6;
       border: 2px dashed #cbd5e1;
       border-radius: var(--radius-lg);
       padding: var(--spacing-md);
@@ -207,7 +282,7 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
       justify-content: center;
       gap: var(--spacing-sm);
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.92);
       padding: var(--spacing-xl);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-md);
@@ -232,7 +307,7 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
     }
 
     .controls-panel {
-      width: 320px;
+      width: 360px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -245,12 +320,18 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
       overflow-y: auto;
     }
 
-    .panel-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--color-text);
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding-bottom: var(--spacing-xs);
       border-bottom: 2px solid var(--color-border);
+    }
+
+    .panel-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--color-text);
     }
 
     .control-group {
@@ -259,12 +340,23 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
       gap: var(--spacing-xs);
     }
 
+    .label-with-action {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .control-label {
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--color-text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+
+    .add-block-btn {
+      padding: 3px 8px;
+      font-size: 0.8rem;
     }
 
     .upload-btn {
@@ -288,42 +380,126 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
       text-overflow: ellipsis;
     }
 
-    .text-input {
-      width: 100%;
-      padding: var(--spacing-sm) var(--spacing-md);
+    /* Blocks List */
+    .blocks-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .block-card {
       border: 1.5px solid var(--color-border);
       border-radius: var(--radius-md);
+      padding: var(--spacing-sm);
+      background: #fafafa;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+
+      &:hover {
+        border-color: #93c5fd;
+      }
+
+      &.active {
+        border-color: var(--color-primary);
+        background: #f0f7ff;
+        box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.12);
+      }
+    }
+
+    .block-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .block-type-badge {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition-fast);
+
+      &:hover {
+        background: #fee2e2;
+      }
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       resize: vertical;
-      min-height: 70px;
       line-height: 1.4;
-      transition: border-color var(--transition-fast);
+      background: #fff;
 
       &:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.15);
       }
     }
 
-    .font-options-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    .block-controls-body {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #dbeafe;
+      display: flex;
+      flex-direction: column;
       gap: 6px;
     }
 
-    .font-option-btn {
-      padding: 8px 4px;
+    .size-slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .slider-label {
+      font-size: 0.78rem;
+      color: var(--color-text-secondary);
+      font-weight: 600;
+    }
+
+    .slider-input {
+      width: 100%;
+      cursor: pointer;
+      accent-color: var(--color-primary);
+    }
+
+    .action-buttons-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    /* Font Presets */
+    .font-presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .font-preset-card {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       background: var(--color-surface);
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--color-text);
       cursor: pointer;
       transition: all var(--transition-fast);
-      text-align: center;
+      text-align: left;
 
       &:hover {
         border-color: var(--color-primary);
@@ -331,22 +507,48 @@ import { EditorStateService, FONT_STYLE_OPTIONS } from '../../services/editor-st
 
       &.active {
         background: var(--color-primary);
-        color: #fff;
         border-color: var(--color-primary);
+
+        .preset-name {
+          color: #fff;
+        }
+
+        .preset-desc {
+          color: rgba(255, 255, 255, 0.85);
+        }
       }
     }
 
-    .error-message {
-      padding: var(--spacing-sm) var(--spacing-md);
+    .preset-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .preset-desc {
+      font-size: 0.72rem;
+      color: var(--color-text-secondary);
+      line-height: 1.25;
+      margin-top: 2px;
+    }
+
+    .feedback-alert {
+      padding: 8px 12px;
       background: #fef2f2;
       border: 1px solid #fecaca;
       border-radius: var(--radius-sm);
       color: var(--color-danger);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
+
+      &.success {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: var(--color-success);
+      }
     }
 
     .tip-box {
-      padding: var(--spacing-sm) var(--spacing-md);
+      padding: 10px 12px;
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       border-radius: var(--radius-sm);
@@ -374,6 +576,7 @@ export class StepEditorComponent {
   private readonly canvasService = inject(CanvasService);
   private readonly imageService = inject(ImageService);
   private readonly fileService = inject(FileService);
+  protected readonly fontService = inject(FontService);
   protected readonly editorState = inject(EditorStateService);
 
   readonly fabricCanvas =
@@ -381,13 +584,21 @@ export class StepEditorComponent {
   readonly canvasWrapper =
     viewChild.required<ElementRef<HTMLDivElement>>('canvasWrapper');
 
-  readonly errorMessage = signal('');
+  readonly feedbackMessage = signal('');
+  readonly isFeedbackSuccess = signal(false);
   readonly isDragging = signal(false);
-  readonly fontOptions = FONT_STYLE_OPTIONS;
 
   constructor() {
     afterNextRender(() => {
       this.initEditor();
+    });
+
+    // Sync canvas selection back to editor state
+    effect(() => {
+      const selectedId = this.canvasService.onBlockSelected();
+      if (selectedId) {
+        this.editorState.setActiveBlockId(selectedId);
+      }
     });
   }
 
@@ -399,29 +610,19 @@ export class StepEditorComponent {
     if (!template) return;
 
     const canvasEl = this.fabricCanvas().nativeElement;
-    this.canvasService.initCanvas(canvasEl, template);
+    const blocks = this.editorState.textBlocks();
+    this.canvasService.initCanvas(canvasEl, template, blocks);
 
     // Restore background image if available in state
     const savedImage = this.editorState.userImageDataUrl();
     if (savedImage) {
       await this.canvasService.setBackgroundImage(savedImage);
     }
-
-    // Set text and font
-    const textToSet =
-      this.editorState.userText() || template.textDefault.content;
-    const fontToSet =
-      this.editorState.selectedFontFamily() || template.textDefault.fontFamily;
-
-    this.editorState.setText(textToSet);
-    this.editorState.setFontFamily(fontToSet);
-    this.canvasService.setText(textToSet, fontToSet);
   }
 
   async onSelectImageClick(fileInput: HTMLInputElement): Promise<void> {
-    this.errorMessage.set('');
+    this.feedbackMessage.set('');
 
-    // Try Electron native dialog first if available
     if (this.fileService.isElectron()) {
       const result = await this.fileService.openImageViaElectron();
       if (result) {
@@ -430,7 +631,6 @@ export class StepEditorComponent {
       }
     }
 
-    // Fallback to browser file input
     fileInput.click();
   }
 
@@ -467,14 +667,13 @@ export class StepEditorComponent {
   }
 
   private async handleFile(file: File): Promise<void> {
-    this.errorMessage.set('');
+    this.feedbackMessage.set('');
     try {
       const dataUrl = await this.imageService.loadImageFile(file);
       await this.applyImageData(dataUrl, file.name);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Lỗi không xác định khi tải ảnh.';
-      this.errorMessage.set(message);
+      this.isFeedbackSuccess.set(false);
+      this.feedbackMessage.set(err instanceof Error ? err.message : 'Lỗi khi tải ảnh.');
     }
   }
 
@@ -483,18 +682,84 @@ export class StepEditorComponent {
     await this.canvasService.setBackgroundImage(dataUrl);
   }
 
-  onTextChanged(text: string): void {
-    this.editorState.setText(text);
-    this.canvasService.setText(text, this.editorState.selectedFontFamily());
+  // === Multi-block Actions ===
+
+  onSelectBlock(id: string): void {
+    this.editorState.setActiveBlockId(id);
+    this.canvasService.selectTextBlock(id);
+  }
+
+  onAddSubtitle(): void {
+    const newBlock = this.editorState.addSubtitleBlock();
+    if (newBlock) {
+      this.canvasService.renderTextBlock(newBlock);
+      this.canvasService.selectTextBlock(newBlock.id);
+    }
+  }
+
+  onRemoveBlock(id: string, event: Event): void {
+    event.stopPropagation();
+    this.editorState.removeTextBlock(id);
+    this.canvasService.removeTextBlock(id);
+  }
+
+  onBlockContentChanged(id: string, content: string): void {
+    this.editorState.updateBlockContent(id, content);
+    const block = this.editorState.textBlocks().find((b) => b.id === id);
+    if (block) {
+      this.canvasService.updateTextBlock(block);
+    }
+  }
+
+  onBlockSizeChanged(id: string, size: number): void {
+    const numSize = Number(size);
+    this.editorState.updateBlockFontSize(id, numSize);
+    const block = this.editorState.textBlocks().find((b) => b.id === id);
+    if (block) {
+      this.canvasService.updateTextBlock(block);
+    }
   }
 
   onFontSelected(fontFamily: string): void {
-    this.editorState.setFontFamily(fontFamily);
-    this.canvasService.setFontFamily(fontFamily);
+    const active = this.editorState.activeBlock();
+    if (!active) return;
+
+    this.editorState.updateBlockFont(active.id, fontFamily);
+    const updated = this.editorState.textBlocks().find((b) => b.id === active.id);
+    if (updated) {
+      this.canvasService.updateTextBlock(updated);
+    }
   }
 
-  onResetPosition(): void {
-    this.canvasService.resetTextPosition();
+  onCenterBlock(id: string, event: Event): void {
+    event.stopPropagation();
+    this.canvasService.centerHorizontally(id);
+    const tb = this.canvasService.getTextbox(id);
+    if (tb) {
+      this.editorState.updateBlockPosition(id, tb.left!, tb.top!);
+    }
+  }
+
+  onResetBlockPosition(block: TextBlock, event: Event): void {
+    event.stopPropagation();
+    this.canvasService.resetBlockPosition(block);
+    const tb = this.canvasService.getTextbox(block.id);
+    if (tb) {
+      this.editorState.updateBlockPosition(block.id, tb.left!, tb.top!);
+      this.editorState.updateBlockFontSize(block.id, tb.fontSize || block.maxFontSize);
+    }
+  }
+
+  async onSaveProjectClick(): Promise<void> {
+    const project = this.editorState.getProjectData();
+    if (!project) return;
+
+    const saved = await this.fileService.saveProject(project);
+    if (saved) {
+      this.isFeedbackSuccess.set(true);
+      this.feedbackMessage.set('Đã lưu bản thiết kế thành công!');
+      setTimeout(() => this.feedbackMessage.set(''), 4000);
+    }
   }
 
   onBack(): void {
@@ -503,7 +768,6 @@ export class StepEditorComponent {
 
   onNext(): void {
     if (this.editorState.canProceedToExport()) {
-      // Pre-render the export image into editor state so Step 3 has immediate access
       const exportDataUrl = this.canvasService.exportToPng();
       this.editorState.setExportedDataUrl(exportDataUrl);
       this.stepComplete.emit();

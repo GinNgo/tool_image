@@ -37,6 +37,53 @@ export interface DecorationConfig {
   overlayGradient?: string;
 }
 
+// === New Entities for Multi-layer & Project Persistence ===
+
+export type TextBlockType = 'title' | 'subtitle' | 'caption' | 'custom';
+
+export interface TextBlock {
+  id: string;
+  type: TextBlockType;
+  label: string;
+  content: string;
+  x: number;
+  y: number;
+  align: 'center' | 'left' | 'right';
+  fontFamily: string;
+  fontSize: number;
+  minFontSize: number;
+  maxFontSize: number;
+  colorMode: 'auto' | 'custom';
+  color: string;
+  strokeColor: string;
+  strokeWidth: number;
+  removable: boolean;
+  defaultX?: number;
+  defaultY?: number;
+}
+
+export interface FontPreset {
+  id: string;
+  name: string;
+  fontFamily: string;
+  description: string;
+  category: 'formal' | 'impact' | 'modern' | 'classic' | 'dynamic' | 'friendly';
+}
+
+export interface ProjectData {
+  version: '2.0';
+  projectName: string;
+  updatedAt: string;
+  templateId: string;
+  canvas: CanvasSize;
+  backgroundImage: {
+    dataUrl: string;
+    fileName: string;
+  } | null;
+  textBlocks: TextBlock[];
+  activeBlockId: string | null;
+}
+
 export interface EditorState {
   selectedTemplate: Template | null;
   userImageDataUrl: string | null;

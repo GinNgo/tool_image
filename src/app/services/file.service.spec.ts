@@ -1,5 +1,6 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { FileService } from './file.service';
+import { ProjectData } from '../models/template.model';
 
 describe('FileService', () => {
   let service: FileService;
@@ -48,31 +49,42 @@ describe('FileService', () => {
     expect(result).toBe(true);
   });
 
-  it('should return false if user cancels Electron save dialog', async () => {
-    (window as unknown as Record<string, unknown>)['electronAPI'] = {
-      showSaveDialog: vi.fn().mockResolvedValue(null),
-      writeFile: vi.fn(),
-    };
-
-    const mockDataUrl = 'data:image/png;base64,mock';
-    const result = await service.saveImage(mockDataUrl, 'banner.png');
-
-    expect(result).toBe(false);
-  });
-
-  it('should open image file via Electron API', async () => {
-    const showOpenDialogMock = vi.fn().mockResolvedValue('C:\\images\\bg.png');
-    const readFileMock = vi.fn().mockResolvedValue('data:image/png;base64,imagedata');
+  it('should save and load project data via Electron API', async () => {
+    const showSaveProjectDialogMock = vi.fn().mockResolvedValue('C:\\test\\du-an.json');
+    const writeProjectFileMock = vi.fn().mockResolvedValue(true);
+    const showOpenProjectDialogMock = vi.fn().mockResolvedValue('C:\\test\\du-an.json');
+    const readProjectFileMock = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        version: '2.0',
+        projectName: 'du-an-test',
+        templateId: 'tpl_01',
+      })
+    );
 
     (window as unknown as Record<string, unknown>)['electronAPI'] = {
-      showOpenDialog: showOpenDialogMock,
-      readFile: readFileMock,
+      showSaveProjectDialog: showSaveProjectDialogMock,
+      writeProjectFile: writeProjectFileMock,
+      showOpenProjectDialog: showOpenProjectDialogMock,
+      readProjectFile: readProjectFileMock,
     };
 
-    const res = await service.openImageViaElectron();
-    expect(res).toEqual({
-      dataUrl: 'data:image/png;base64,imagedata',
-      fileName: 'bg.png',
-    });
+    const mockProject: ProjectData = {
+      version: '2.0',
+      projectName: 'du-an-test',
+      updatedAt: '2026-09-05',
+      templateId: 'tpl_01',
+      canvas: { width: 1080, height: 1350 },
+      backgroundImage: null,
+      textBlocks: [],
+      activeBlockId: null,
+    };
+
+    const saved = await service.saveProject(mockProject);
+    expect(saved).toBe(true);
+    expect(showSaveProjectDialogMock).toHaveBeenCalled();
+
+    const loaded = await service.openProjectViaElectron();
+    expect(loaded).toBeTruthy();
+    expect(loaded?.templateId).toBe('tpl_01');
   });
 });

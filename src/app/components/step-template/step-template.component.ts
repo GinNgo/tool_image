@@ -1,11 +1,13 @@
-﻿import {
+import {
   Component,
   output,
   inject,
   ChangeDetectionStrategy,
+  signal,
 } from '@angular/core';
 import { TemplateService } from '../../services/template.service';
 import { EditorStateService } from '../../services/editor-state.service';
+import { FileService } from '../../services/file.service';
 import { Template } from '../../models/template.model';
 
 @Component({
@@ -15,8 +17,43 @@ import { Template } from '../../models/template.model';
   template: `
     <div class="step-template">
       <h2 class="step-title">Bước 1: Chọn mẫu thiết kế</h2>
-      <p class="step-desc">Chọn một mẫu bố cục bên dưới để bắt đầu tạo ảnh</p>
+      <p class="step-desc">Chọn một mẫu bố cục bên dưới hoặc mở lại dự án đã lưu trước đây</p>
 
+      <!-- Quick Action: Open existing project file or restore last session -->
+      <div class="resume-bar">
+        <button
+          class="btn btn-secondary open-proj-btn"
+          (click)="onOpenProjectClick(projectFileInput)"
+          type="button"
+        >
+          📂 Mở bản thảo cũ đã lưu (.json)
+        </button>
+        <input
+          #projectFileInput
+          type="file"
+          accept=".json,application/json"
+          (change)="onProjectFileSelected($event)"
+          style="display: none"
+        />
+
+        @if (editorState.hasSavedProject()) {
+          <button
+            class="btn btn-secondary resume-last-btn"
+            (click)="onResumeLastSession()"
+            type="button"
+          >
+            ⚡ Tiếp tục bản thảo dở dang gần nhất
+          </button>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert-box error">
+          ⚠️ {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Templates Grid -->
       <div class="template-grid">
         @for (tpl of templateService.templates(); track tpl.templateId) {
           <button
@@ -59,7 +96,7 @@ import { Template } from '../../models/template.model';
       flex-direction: column;
       align-items: center;
       gap: var(--spacing-lg);
-      max-width: 900px;
+      max-width: 920px;
       margin: 0 auto;
       padding-bottom: var(--spacing-xl);
     }
@@ -76,6 +113,38 @@ import { Template } from '../../models/template.model';
       color: var(--color-text-secondary);
       margin-top: calc(-1 * var(--spacing-sm));
       text-align: center;
+    }
+
+    .resume-bar {
+      display: flex;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 10px 16px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-lg);
+      width: 100%;
+    }
+
+    .open-proj-btn,
+    .resume-last-btn {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .alert-box {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      text-align: center;
+
+      &.error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+      }
     }
 
     .template-grid {
@@ -117,7 +186,7 @@ import { Template } from '../../models/template.model';
       aspect-ratio: 4 / 5;
       border-radius: var(--radius-md);
       overflow: hidden;
-      background: #e5e7eb;
+      background: #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -158,7 +227,10 @@ import { Template } from '../../models/template.model';
 export class StepTemplateComponent {
   readonly stepComplete = output<void>();
   protected readonly templateService = inject(TemplateService);
-  private readonly editorState = inject(EditorStateService);
+  protected readonly editorState = inject(EditorStateService);
+  private readonly fileService = inject(FileService);
+
+  readonly errorMessage = signal('');
 
   onSelectTemplate(tpl: Template): void {
     this.templateService.selectTemplate(tpl.templateId);
@@ -171,5 +243,56 @@ export class StepTemplateComponent {
       this.editorState.setTemplate(current);
       this.stepComplete.emit();
     }
+  }
+
+  async onOpenProjectClick(fileInput: HTMLInputElement): Promise<void> {
+    this.errorMessage.set('');
+
+    if (this.fileService.isElectron()) {
+      const project = await this.fileService.openProjectViaElectron();
+      if (project) {
+        this.applyLoadedProject(project);
+        return;
+      }
+    }
+
+    fileInput.click();
+  }
+
+  async onProjectFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    try {
+      const project = await this.fileService.readProjectFromFile(file);
+      this.applyLoadedProject(project);
+    } catch (err) {
+      this.errorMessage.set(err instanceof Error ? err.message : 'Lỗi đọc file dự án');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  onResumeLastSession(): void {
+    const saved = this.editorState.getSavedProjectFromStorage();
+    if (saved) {
+      this.applyLoadedProject(saved);
+    }
+  }
+
+  private applyLoadedProject(project: import('../../models/template.model').ProjectData): void {
+    const tpl =
+      this.templateService.getTemplateById(project.templateId) ||
+      this.templateService.templates()[0];
+
+    if (!tpl) {
+      this.errorMessage.set('Không tìm thấy mẫu phù hợp với file dự án này.');
+      return;
+    }
+
+    this.templateService.selectTemplate(tpl.templateId);
+    this.editorState.loadProjectData(project, tpl);
+    this.stepComplete.emit();
   }
 }

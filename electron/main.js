@@ -6,11 +6,11 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 900,
-    minWidth: 900,
+    width: 1320,
+    height: 920,
+    minWidth: 960,
     minHeight: 700,
-    title: 'Công cụ tạo ảnh tuyên truyền',
+    title: 'Công cụ tạo ảnh và tiêu đề tuyên truyền',
     icon: path.join(__dirname, '../public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -21,13 +21,11 @@ function createWindow() {
     show: false,
   });
 
-  // Load Angular build output
   const indexPath = path.join(__dirname, '../dist/tool-image/browser/index.html');
 
   if (fs.existsSync(indexPath)) {
     mainWindow.loadFile(indexPath);
   } else {
-    // Dev mode: load from Angular dev server
     mainWindow.loadURL('http://localhost:4200');
   }
 
@@ -40,9 +38,8 @@ function createWindow() {
   });
 }
 
-// === IPC Handlers ===
+// === IPC Handlers: Images & Export ===
 
-// Show save dialog
 ipcMain.handle('show-save-dialog', async (_event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: options.defaultPath || 'anh-xuat.png',
@@ -53,14 +50,12 @@ ipcMain.handle('show-save-dialog', async (_event, options) => {
   return result.filePath;
 });
 
-// Write file (base64 data)
 ipcMain.handle('write-file', async (_event, filePath, base64Data) => {
   const buffer = Buffer.from(base64Data, 'base64');
   await fs.promises.writeFile(filePath, buffer);
   return true;
 });
 
-// Show open dialog (for image selection)
 ipcMain.handle('show-open-dialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Chọn ảnh nền',
@@ -77,7 +72,6 @@ ipcMain.handle('show-open-dialog', async () => {
   return result.filePaths[0];
 });
 
-// Read file as base64
 ipcMain.handle('read-file', async (_event, filePath) => {
   const buffer = await fs.promises.readFile(filePath);
   const ext = path.extname(filePath).toLowerCase();
@@ -90,6 +84,45 @@ ipcMain.handle('read-file', async (_event, filePath) => {
   };
   const mime = mimeMap[ext] || 'image/png';
   return `data:${mime};base64,${buffer.toString('base64')}`;
+});
+
+// === IPC Handlers: Project Save & Load (.json) ===
+
+ipcMain.handle('show-save-project-dialog', async (_event, options) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Lưu dự án chỉnh sửa',
+    defaultPath: options.defaultPath || 'du-an.json',
+    filters: options.filters || [{ name: 'Dự án tạo ảnh', extensions: ['json'] }],
+  });
+
+  if (result.canceled) return null;
+  return result.filePath;
+});
+
+ipcMain.handle('write-project-file', async (_event, filePath, content) => {
+  await fs.promises.writeFile(filePath, content, 'utf8');
+  return true;
+});
+
+ipcMain.handle('show-open-project-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Mở dự án cũ',
+    filters: [
+      {
+        name: 'Dự án tạo ảnh',
+        extensions: ['json'],
+      },
+    ],
+    properties: ['openFile'],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('read-project-file', async (_event, filePath) => {
+  const content = await fs.promises.readFile(filePath, 'utf8');
+  return content;
 });
 
 // === App lifecycle ===

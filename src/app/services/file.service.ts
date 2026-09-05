@@ -1,4 +1,5 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { ProjectData } from '../models/template.model';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -39,6 +40,82 @@ export class FileService {
     }
   }
 
+  // === Project File Save & Load (.json) ===
+
+  async saveProject(project: ProjectData, defaultFilename?: string): Promise<boolean> {
+    const filename = defaultFilename || `${project.projectName || 'du-an'}.json`;
+    const jsonStr = JSON.stringify(project, null, 2);
+
+    if (this.isElectron()) {
+      try {
+        const electronAPI = this.getElectronAPI();
+        if (electronAPI?.showSaveProjectDialog && electronAPI?.writeProjectFile) {
+          const filePath = await electronAPI.showSaveProjectDialog({
+            defaultPath: filename,
+            filters: [{ name: 'Dự án tạo ảnh', extensions: ['json'] }],
+          });
+          if (!filePath) return false;
+          await electronAPI.writeProjectFile(filePath, jsonStr);
+          return true;
+        }
+      } catch (err) {
+        console.error('Lỗi lưu dự án qua Electron:', err);
+      }
+    }
+
+    // Fallback: download as JSON file in browser
+    return new Promise((resolve) => {
+      try {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        resolve(true);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  async openProjectViaElectron(): Promise<ProjectData | null> {
+    if (!this.isElectron()) return null;
+
+    try {
+      const electronAPI = this.getElectronAPI();
+      if (!electronAPI?.showOpenProjectDialog || !electronAPI?.readProjectFile) return null;
+
+      const filePath = await electronAPI.showOpenProjectDialog();
+      if (!filePath) return null;
+
+      const jsonStr = await electronAPI.readProjectFile(filePath);
+      return JSON.parse(jsonStr) as ProjectData;
+    } catch (err) {
+      console.error('Lỗi mở dự án qua Electron:', err);
+      return null;
+    }
+  }
+
+  async readProjectFromFile(file: File): Promise<ProjectData> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result as string) as ProjectData;
+          resolve(parsed);
+        } catch {
+          reject(new Error('File dự án không hợp lệ hoặc đã bị lỗi.'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Không thể đọc file dự án.'));
+      reader.readAsText(file);
+    });
+  }
+
   isElectron(): boolean {
     return !!(window as unknown as Record<string, unknown>)['electronAPI'];
   }
@@ -63,7 +140,7 @@ export class FileService {
         filters: [{ name: 'Ảnh PNG', extensions: ['png'] }],
       });
 
-      if (!filePath) return false; // Người dùng huỷ
+      if (!filePath) return false;
 
       const base64Data = dataUrl.includes(',')
         ? dataUrl.split(',')[1]
@@ -105,4 +182,11 @@ interface ElectronAPI {
   writeFile(filePath: string, base64Data: string): Promise<void>;
   showOpenDialog(): Promise<string | null>;
   readFile(filePath: string): Promise<string>;
+  showSaveProjectDialog?(options: {
+    defaultPath: string;
+    filters: Array<{ name: string; extensions: string[] }>;
+  }): Promise<string | null>;
+  showOpenProjectDialog?(): Promise<string | null>;
+  writeProjectFile?(filePath: string, content: string): Promise<void>;
+  readProjectFile?(filePath: string): Promise<string>;
 }

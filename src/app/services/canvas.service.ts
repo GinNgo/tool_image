@@ -1,8 +1,8 @@
-﻿import { Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Canvas, FabricImage, Textbox, Line, Rect, FabricObject } from 'fabric';
-import { Template } from '../models/template.model';
+import { Template, TextBlock } from '../models/template.model';
 
-const SNAP_THRESHOLD = 12;
+const SNAP_THRESHOLD = 14;
 const EXPORT_MULTIPLIER = 2;
 
 @Injectable({ providedIn: 'root' })
@@ -10,14 +10,15 @@ export class CanvasService {
   private canvas: Canvas | null = null;
   private backgroundImage: FabricImage | null = null;
   private decorationBorder: Rect | null = null;
-  private textbox: Textbox | null = null;
+  private textboxes: Map<string, Textbox> = new Map();
   private snapLineH: Line | null = null;
   private snapLineV: Line | null = null;
   private currentTemplate: Template | null = null;
 
   readonly isCanvasReady = signal(false);
+  readonly onBlockSelected = signal<string | null>(null);
 
-  initCanvas(canvasElement: HTMLCanvasElement, template: Template): void {
+  initCanvas(canvasElement: HTMLCanvasElement, template: Template, blocks: TextBlock[] = []): void {
     this.dispose();
 
     this.currentTemplate = template;
@@ -25,12 +26,19 @@ export class CanvasService {
       width: template.canvas.width,
       height: template.canvas.height,
       backgroundColor: '#f3f4f6',
-      selection: false,
+      selection: true,
     });
 
     this.createDecorations();
     this.createSnapLines();
     this.setupSnapGuides();
+    this.setupSelectionListener();
+
+    // Render initial blocks
+    if (blocks.length > 0) {
+      blocks.forEach((block) => this.renderTextBlock(block));
+    }
+
     this.isCanvasReady.set(true);
   }
 
@@ -41,11 +49,12 @@ export class CanvasService {
     }
     this.backgroundImage = null;
     this.decorationBorder = null;
-    this.textbox = null;
+    this.textboxes.clear();
     this.snapLineH = null;
     this.snapLineV = null;
     this.currentTemplate = null;
     this.isCanvasReady.set(false);
+    this.onBlockSelected.set(null);
   }
 
   async setBackgroundImage(dataUrl: string): Promise<void> {
@@ -75,41 +84,41 @@ export class CanvasService {
     });
 
     this.backgroundImage = img;
-    // Insert at index 0 (bottom layer)
     this.canvas.insertAt(0, img);
 
-    // Ensure decorations and snap lines remain above background
+    // Keep decorations and textboxes above background
     if (this.decorationBorder) {
       this.canvas.bringObjectToFront(this.decorationBorder);
     }
-    if (this.textbox) {
-      this.canvas.bringObjectToFront(this.textbox);
-      this.applyAutoContrast();
-    }
+    this.textboxes.forEach((tb) => {
+      this.canvas?.bringObjectToFront(tb);
+      this.applyAutoContrastForBox(tb);
+    });
 
     this.canvas.renderAll();
   }
 
-  setText(text: string, fontFamily?: string): void {
-    if (!this.canvas || !this.currentTemplate) return;
+  // === TextBlock Manipulation (Map<string, Textbox>) ===
 
-    const config = this.currentTemplate.textDefault;
-    const content = text || config.content;
-    const targetFont = fontFamily || config.fontFamily;
+  renderTextBlock(block: TextBlock): Textbox | null {
+    if (!this.canvas || !this.currentTemplate) return null;
 
-    if (!this.textbox) {
-      this.textbox = new Textbox(content, {
-        left: config.x,
-        top: config.y,
+    let tb = this.textboxes.get(block.id);
+    const cw = this.currentTemplate.canvas.width;
+
+    if (!tb) {
+      tb = new Textbox(block.content, {
+        left: block.x,
+        top: block.y,
         originX: 'center',
         originY: 'center',
-        width: this.currentTemplate.canvas.width * 0.85,
-        fontFamily: targetFont,
-        fontSize: config.maxFontSize,
-        textAlign: config.align,
-        fill: '#ffffff',
-        stroke: '#000000',
-        strokeWidth: config.strokeWidth,
+        width: cw * 0.85,
+        fontFamily: block.fontFamily,
+        fontSize: block.fontSize,
+        textAlign: block.align,
+        fill: block.color || '#ffffff',
+        stroke: block.strokeColor || '#000000',
+        strokeWidth: block.strokeWidth || 2,
         editable: false,
         lockRotation: true,
         lockScalingX: true,
@@ -120,66 +129,184 @@ export class CanvasService {
         cornerColor: 'rgba(26, 86, 219, 0.9)',
       });
 
-      this.constrainToBounds(this.textbox);
-      this.canvas.add(this.textbox);
-      this.canvas.setActiveObject(this.textbox);
+      // Attach custom ID to the fabric object
+      (tb as unknown as Record<string, unknown>)['blockId'] = block.id;
+
+      this.constrainToBounds(tb);
+      this.canvas.add(tb);
+      this.textboxes.set(block.id, tb);
     } else {
-      this.textbox.set({
-        text: content,
-        fontFamily: targetFont,
+      tb.set({
+        text: block.content,
+        fontFamily: block.fontFamily,
+        fontSize: block.fontSize,
+        left: block.x,
+        top: block.y,
       });
     }
 
-    this.autoFitFontSize();
-    this.applyAutoContrast();
+    this.autoFitFontSizeForBox(tb, block);
+    this.applyAutoContrastForBox(tb);
     this.canvas.renderAll();
+    return tb;
+  }
+
+  updateTextBlock(block: TextBlock): void {
+    const tb = this.textboxes.get(block.id);
+    if (!tb) {
+      this.renderTextBlock(block);
+      return;
+    }
+
+    tb.set({
+      text: block.content,
+      fontFamily: block.fontFamily,
+      fontSize: block.fontSize,
+      left: block.x,
+      top: block.y,
+    });
+
+    this.autoFitFontSizeForBox(tb, block);
+    this.applyAutoContrastForBox(tb);
+    this.canvas?.renderAll();
+  }
+
+  removeTextBlock(id: string): void {
+    const tb = this.textboxes.get(id);
+    if (tb && this.canvas) {
+      this.canvas.remove(tb);
+      this.textboxes.delete(id);
+      this.canvas.renderAll();
+    }
+  }
+
+  selectTextBlock(id: string): void {
+    const tb = this.textboxes.get(id);
+    if (tb && this.canvas) {
+      this.canvas.setActiveObject(tb);
+      this.canvas.renderAll();
+    }
+  }
+
+  centerHorizontally(id: string): void {
+    if (!this.canvas || !this.currentTemplate) return;
+    const tb = this.textboxes.get(id);
+    if (!tb) return;
+
+    const centerX = this.currentTemplate.canvas.width / 2;
+    tb.set({ left: centerX });
+    tb.setCoords();
+    this.applyAutoContrastForBox(tb);
+    this.canvas.renderAll();
+  }
+
+  resetBlockPosition(block: TextBlock): void {
+    const tb = this.textboxes.get(block.id);
+    if (!tb || !this.currentTemplate) return;
+
+    const targetX = block.defaultX ?? this.currentTemplate.canvas.width / 2;
+    const targetY = block.defaultY ?? (block.type === 'title' ? this.currentTemplate.textDefault.y : this.currentTemplate.canvas.height * 0.85);
+
+    tb.set({
+      left: targetX,
+      top: targetY,
+      fontSize: block.maxFontSize,
+    });
+    tb.setCoords();
+    this.autoFitFontSizeForBox(tb, block);
+    this.applyAutoContrastForBox(tb);
+    this.canvas?.renderAll();
+  }
+
+  // === Backward Compatibility for single text operations ===
+  setText(text: string, fontFamily?: string): void {
+    const titleBox = this.textboxes.get('title') || Array.from(this.textboxes.values())[0];
+    if (titleBox) {
+      titleBox.set({
+        text,
+        fontFamily: fontFamily || titleBox.fontFamily,
+      });
+      if (this.currentTemplate) {
+        this.autoFitFontSizeForBox(titleBox, {
+          ...this.currentTemplate.textDefault,
+          id: 'title',
+          type: 'title',
+          label: 'Tiêu đề chính',
+          fontSize: this.currentTemplate.textDefault.maxFontSize,
+          colorMode: 'auto',
+          color: '#ffffff',
+          strokeColor: '#000000',
+          removable: false,
+        });
+      }
+      this.applyAutoContrastForBox(titleBox);
+      this.canvas?.renderAll();
+    } else if (this.currentTemplate) {
+      this.renderTextBlock({
+        id: 'title',
+        type: 'title',
+        label: 'Tiêu đề chính',
+        content: text,
+        x: this.currentTemplate.textDefault.x,
+        y: this.currentTemplate.textDefault.y,
+        align: this.currentTemplate.textDefault.align,
+        fontFamily: fontFamily || this.currentTemplate.textDefault.fontFamily,
+        fontSize: this.currentTemplate.textDefault.maxFontSize,
+        minFontSize: this.currentTemplate.textDefault.minFontSize,
+        maxFontSize: this.currentTemplate.textDefault.maxFontSize,
+        colorMode: 'auto',
+        color: '#ffffff',
+        strokeColor: '#000000',
+        strokeWidth: this.currentTemplate.textDefault.strokeWidth || 2,
+        removable: false,
+      });
+    }
   }
 
   setFontFamily(fontFamily: string): void {
-    if (!this.textbox || !this.canvas) return;
-    this.textbox.set({ fontFamily });
-    this.autoFitFontSize();
-    this.canvas.renderAll();
+    const activeObj = this.canvas?.getActiveObject();
+    const targetBox = (activeObj as Textbox) || this.textboxes.get('title') || Array.from(this.textboxes.values())[0];
+    if (targetBox) {
+      targetBox.set({ fontFamily });
+      this.canvas?.renderAll();
+    }
   }
 
   resetTextPosition(): void {
-    if (!this.textbox || !this.currentTemplate) return;
-
-    const config = this.currentTemplate.textDefault;
-    this.textbox.set({
-      left: config.x,
-      top: config.y,
-      fontSize: config.maxFontSize,
-    });
-    this.textbox.setCoords();
-    this.autoFitFontSize();
-    this.applyAutoContrast();
-    this.canvas?.renderAll();
+    const titleBox = this.textboxes.get('title');
+    if (titleBox && this.currentTemplate) {
+      const config = this.currentTemplate.textDefault;
+      titleBox.set({
+        left: config.x,
+        top: config.y,
+        fontSize: config.maxFontSize,
+      });
+      titleBox.setCoords();
+      this.applyAutoContrastForBox(titleBox);
+      this.canvas?.renderAll();
+    }
   }
 
   exportToPng(): string | null {
     if (!this.canvas) return null;
 
-    // Discard active object so selection borders are not baked into the export
     this.canvas.discardActiveObject();
     this.hideSnapLines();
     this.canvas.renderAll();
 
-    const dataUrl = this.canvas.toDataURL({
+    return this.canvas.toDataURL({
       format: 'png',
       quality: 1,
       multiplier: EXPORT_MULTIPLIER,
     });
-
-    return dataUrl;
   }
 
   getCanvas(): Canvas | null {
     return this.canvas;
   }
 
-  getTextbox(): Textbox | null {
-    return this.textbox;
+  getTextbox(id: string = 'title'): Textbox | null {
+    return this.textboxes.get(id) || null;
   }
 
   // === Template Decorations ===
@@ -208,77 +335,62 @@ export class CanvasService {
     }
   }
 
-  // === Auto-fit: reduce fontSize until text fits within width & height ===
-  private autoFitFontSize(): void {
-    if (!this.textbox || !this.currentTemplate) return;
+  // === Auto-fit fontSize ===
+  private autoFitFontSizeForBox(textbox: Textbox, block: TextBlock): void {
+    if (!this.currentTemplate) return;
 
-    const config = this.currentTemplate.textDefault;
     const maxWidth = this.currentTemplate.canvas.width * 0.85;
     const maxHeight = this.currentTemplate.canvas.height * 0.35;
 
-    let fontSize = config.maxFontSize;
-    this.textbox.set({ fontSize, width: maxWidth });
+    let fontSize = block.fontSize || block.maxFontSize;
+    textbox.set({ fontSize, width: maxWidth });
 
-    while (fontSize > config.minFontSize) {
-      const textWidth = this.textbox.calcTextWidth ? this.textbox.calcTextWidth() : (this.textbox.width || 0);
-      const textHeight = this.textbox.height || 0;
+    while (fontSize > block.minFontSize) {
+      const textWidth = textbox.calcTextWidth ? textbox.calcTextWidth() : (textbox.width || 0);
+      const textHeight = textbox.height || 0;
 
       if (textWidth <= maxWidth && textHeight <= maxHeight) {
         break;
       }
       fontSize -= 1;
-      this.textbox.set({ fontSize });
+      textbox.set({ fontSize });
     }
-    this.textbox.setCoords();
+    textbox.setCoords();
   }
 
-  // === Auto-contrast: sample background luminance without text interference ===
-  private applyAutoContrast(): void {
-    if (!this.canvas || !this.textbox || !this.backgroundImage) return;
+  // === Auto-contrast per box ===
+  private applyAutoContrastForBox(textbox: Textbox): void {
+    if (!this.canvas || !this.backgroundImage || !this.currentTemplate) return;
 
-    const config = this.currentTemplate?.textDefault;
-    if (!config || (config.color !== 'auto' && config.strokeColor !== 'auto')) return;
-
-    const textBounds = this.textbox.getBoundingRect();
+    const textBounds = textbox.getBoundingRect();
     const ctx = this.canvas.getContext() as unknown as CanvasRenderingContext2D;
 
     const sampleX = Math.max(0, Math.floor(textBounds.left));
     const sampleY = Math.max(0, Math.floor(textBounds.top));
-    const sampleW = Math.min(
-      Math.floor(textBounds.width),
-      this.currentTemplate!.canvas.width - sampleX,
-    );
-    const sampleH = Math.min(
-      Math.floor(textBounds.height),
-      this.currentTemplate!.canvas.height - sampleY,
-    );
+    const sampleW = Math.min(Math.floor(textBounds.width), this.currentTemplate.canvas.width - sampleX);
+    const sampleH = Math.min(Math.floor(textBounds.height), this.currentTemplate.canvas.height - sampleY);
 
     if (sampleW <= 0 || sampleH <= 0) return;
 
     let imageData: ImageData;
     try {
-      // Temporarily hide text to avoid reading text's own color
-      const wasVisible = this.textbox.visible;
-      this.textbox.set({ visible: false });
+      const wasVisible = textbox.visible;
+      textbox.set({ visible: false });
       this.canvas.renderAll();
 
       imageData = ctx.getImageData(sampleX, sampleY, sampleW, sampleH);
-
-      this.textbox.set({ visible: wasVisible });
+      textbox.set({ visible: wasVisible });
     } catch {
-      // Canvas tainted or headless fallback
-      this.textbox.set({ fill: '#ffffff', stroke: '#1a1a1a' });
+      textbox.set({ fill: '#ffffff', stroke: '#111827' });
       return;
     }
 
     const luminance = this.calculateAverageLuminance(imageData);
 
-    // Luminance > 130 -> dark text with white outline on bright background
-    // Luminance <= 130 -> white text with dark outline on dark background
     if (luminance > 130) {
-      this.textbox.set({ fill: '#111827', stroke: '#ffffff', strokeWidth: config.strokeWidth || 2 });
+      textbox.set({ fill: '#111827', stroke: '#ffffff', strokeWidth: 2 });
     } else {
-      this.textbox.set({ fill: '#ffffff', stroke: '#111827', strokeWidth: config.strokeWidth || 2 });
+      textbox.set({ fill: '#ffffff', stroke: '#111827', strokeWidth: 2 });
     }
   }
 
@@ -294,7 +406,6 @@ export class CanvasService {
       const b = data[i + 2];
       const a = data[i + 3];
 
-      // Only calculate if pixel is reasonably opaque
       if (a > 30) {
         totalLuminance += 0.299 * r + 0.587 * g + 0.114 * b;
         sampledCount++;
@@ -304,7 +415,7 @@ export class CanvasService {
     return sampledCount > 0 ? totalLuminance / sampledCount : 128;
   }
 
-  // === Snap-to-center guides ===
+  // === Snap-to-center Guides & Selection Listener ===
   private createSnapLines(): void {
     if (!this.canvas || !this.currentTemplate) return;
 
@@ -346,7 +457,6 @@ export class CanvasService {
       const objCenterX = obj.left!;
       const objCenterY = obj.top!;
 
-      // Snap to vertical center
       if (Math.abs(objCenterX - centerX) < SNAP_THRESHOLD) {
         obj.set({ left: centerX });
         this.snapLineV?.set({ visible: true });
@@ -355,7 +465,6 @@ export class CanvasService {
         this.snapLineV?.set({ visible: false });
       }
 
-      // Snap to horizontal center
       if (Math.abs(objCenterY - centerY) < SNAP_THRESHOLD) {
         obj.set({ top: centerY });
         this.snapLineH?.set({ visible: true });
@@ -368,11 +477,31 @@ export class CanvasService {
       this.canvas?.renderAll();
     });
 
-    this.canvas.on('object:modified', () => {
+    this.canvas.on('object:modified', (e) => {
       this.hideSnapLines();
-      this.applyAutoContrast();
+      const obj = e.target;
+      if (obj && obj instanceof Textbox) {
+        this.applyAutoContrastForBox(obj);
+      }
       this.canvas?.renderAll();
     });
+  }
+
+  private setupSelectionListener(): void {
+    if (!this.canvas) return;
+
+    const onSelect = (e: { selected?: FabricObject[] }) => {
+      const selected = e.selected?.[0];
+      if (selected) {
+        const blockId = (selected as unknown as Record<string, unknown>)['blockId'] as string;
+        if (blockId) {
+          this.onBlockSelected.set(blockId);
+        }
+      }
+    };
+
+    this.canvas.on('selection:created', onSelect);
+    this.canvas.on('selection:updated', onSelect);
   }
 
   private hideSnapLines(): void {
@@ -395,9 +524,8 @@ export class CanvasService {
       let left = obj.left!;
       let top = obj.top!;
 
-      // Constrain within canvas bounds (object origin is center)
-      left = Math.max(halfW, Math.min(cw - halfW, left));
-      top = Math.max(halfH, Math.min(ch - halfH, top));
+      left = Math.max(halfW + 10, Math.min(cw - halfW - 10, left));
+      top = Math.max(halfH + 10, Math.min(ch - halfH - 10, top));
 
       obj.set({ left, top });
       obj.setCoords();

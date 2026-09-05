@@ -1,10 +1,11 @@
-﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StepEditorComponent } from './step-editor.component';
 import { TemplateService } from '../../services/template.service';
 import { CanvasService } from '../../services/canvas.service';
 import { ImageService } from '../../services/image.service';
 import { FileService } from '../../services/file.service';
 import { EditorStateService } from '../../services/editor-state.service';
+import { FontService } from '../../services/font.service';
 
 describe('StepEditorComponent', () => {
   let component: StepEditorComponent;
@@ -20,6 +21,7 @@ describe('StepEditorComponent', () => {
         CanvasService,
         ImageService,
         FileService,
+        FontService,
         EditorStateService,
       ],
     }).compileComponents();
@@ -40,14 +42,20 @@ describe('StepEditorComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should update text in state when typed', () => {
-    component.onTextChanged('KHẨU HIỆU MỚI');
+  it('should update block content when edited', () => {
+    const titleBlock = editorState.textBlocks()[0];
+    component.onBlockContentChanged(titleBlock.id, 'KHẨU HIỆU MỚI');
     expect(editorState.userText()).toBe('KHẨU HIỆU MỚI');
   });
 
   it('should change font style when selected', () => {
     component.onFontSelected('BeVietnamPro-Bold');
     expect(editorState.selectedFontFamily()).toBe('BeVietnamPro-Bold');
+  });
+
+  it('should support adding subtitle blocks', () => {
+    component.onAddSubtitle();
+    expect(editorState.textBlocks().length).toBeGreaterThanOrEqual(2);
   });
 
   it('should emit goBack event', () => {

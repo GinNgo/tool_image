@@ -1,5 +1,5 @@
-﻿import { TestBed } from '@angular/core/testing';
-import { EditorStateService, FONT_STYLE_OPTIONS } from './editor-state.service';
+import { TestBed } from '@angular/core/testing';
+import { EditorStateService } from './editor-state.service';
 import { Template } from '../models/template.model';
 
 describe('EditorStateService', () => {
@@ -49,6 +49,22 @@ describe('EditorStateService', () => {
     expect(service.hasTemplate()).toBe(true);
     expect(service.userText()).toBe('MẪU TEXT BAN ĐẦU');
     expect(service.selectedFontFamily()).toBe('Montserrat-Bold');
+    expect(service.textBlocks().length).toBe(1);
+    expect(service.textBlocks()[0].id).toBe('title');
+  });
+
+  it('should support adding, updating and removing subtitle blocks', () => {
+    service.setTemplate(mockTemplate);
+    const subtitle = service.addSubtitleBlock();
+    expect(subtitle).toBeTruthy();
+    expect(service.textBlocks().length).toBe(2);
+
+    service.updateBlockContent(subtitle!.id, 'Nội dung phụ mới');
+    const updated = service.textBlocks().find((b) => b.id === subtitle!.id);
+    expect(updated?.content).toBe('Nội dung phụ mới');
+
+    service.removeTextBlock(subtitle!.id);
+    expect(service.textBlocks().length).toBe(1);
   });
 
   it('should set and clear user image', () => {
@@ -63,46 +79,34 @@ describe('EditorStateService', () => {
     expect(service.hasImage()).toBe(false);
   });
 
-  it('should update text and font family', () => {
-    service.setText('Tiêu đề mới');
-    expect(service.userText()).toBe('Tiêu đề mới');
-
-    service.setFontFamily('BeVietnamPro-Bold');
-    expect(service.selectedFontFamily()).toBe('BeVietnamPro-Bold');
-  });
-
   it('should evaluate canProceedToExport accurately', () => {
-    service.setText('');
+    service.setTemplate(mockTemplate);
     service.clearImage();
     expect(service.canProceedToExport()).toBe(false);
 
     service.setImage('data:image/png;base64,mock', 'test.png');
-    expect(service.canProceedToExport()).toBe(false);
-
-    service.setText('   ');
-    expect(service.canProceedToExport()).toBe(false);
-
-    service.setText('Nội dung hợp lệ');
     expect(service.canProceedToExport()).toBe(true);
+
+    service.setText('');
+    expect(service.canProceedToExport()).toBe(false);
   });
 
-  it('should navigate steps and reset state', () => {
-    service.setStep(2);
-    expect(service.currentStep()).toBe(2);
+  it('should serialize and deserialize project data correctly', () => {
+    service.setTemplate(mockTemplate);
+    service.setImage('data:image/png;base64,mock', 'test.png');
+    service.setText('Dự án đặc biệt');
 
-    service.setStep(3);
-    expect(service.currentStep()).toBe(3);
+    const projectData = service.getProjectData();
+    expect(projectData).toBeTruthy();
+    expect(projectData?.templateId).toBe('test_tpl');
+    expect(projectData?.textBlocks[0].content).toBe('Dự án đặc biệt');
 
     service.resetAll();
-    expect(service.currentStep()).toBe(1);
-    expect(service.selectedTemplate()).toBeNull();
-    expect(service.userImageDataUrl()).toBeNull();
-    expect(service.userText()).toBe('');
-  });
+    expect(service.textBlocks().length).toBe(0);
 
-  it('should provide valid font style options', () => {
-    expect(FONT_STYLE_OPTIONS.length).toBeGreaterThanOrEqual(3);
-    expect(FONT_STYLE_OPTIONS.some((f) => f.fontFamily === 'Montserrat-Bold')).toBe(true);
-    expect(FONT_STYLE_OPTIONS.some((f) => f.fontFamily === 'BeVietnamPro-Bold')).toBe(true);
+    service.loadProjectData(projectData!, mockTemplate);
+    expect(service.userText()).toBe('Dự án đặc biệt');
+    expect(service.hasImage()).toBe(true);
+    expect(service.currentStep()).toBe(2);
   });
 });
