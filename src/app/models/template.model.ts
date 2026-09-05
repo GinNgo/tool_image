@@ -37,9 +37,10 @@ export interface DecorationConfig {
   overlayGradient?: string;
 }
 
-// === New Entities for Multi-layer & Project Persistence ===
+// === Text Block with Advanced Typography & Effects ===
 
 export type TextBlockType = 'title' | 'subtitle' | 'caption' | 'custom';
+export type TextEffectType = 'none' | 'shadow' | 'deep-shadow' | 'stroke' | 'glow' | 'background';
 
 export interface TextBlock {
   id: string;
@@ -57,6 +58,18 @@ export interface TextBlock {
   color: string;
   strokeColor: string;
   strokeWidth: number;
+  bold?: boolean;
+  italic?: boolean;
+  uppercase?: boolean;
+  letterSpacing?: number; // px or normalized
+  lineHeight?: number;
+  effect?: TextEffectType;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundColor?: string;
+  width?: number;
   removable: boolean;
   defaultX?: number;
   defaultY?: number;

@@ -132,40 +132,56 @@ export class EditorStateService {
     this.exportedDataUrl.set(null);
   }
 
+  updateBlockFormat(id: string, updates: Partial<TextBlock>): void {
+    this.textBlocks.update((blocks) =>
+      blocks.map((b) => (b.id === id ? { ...b, ...updates } : b))
+    );
+    this.exportedDataUrl.set(null);
+    this.autoSaveToLocalStorage();
+  }
+
   addSubtitleBlock(): TextBlock | null {
+    return this.addCustomTextBlock('subtitle', 'Tiêu đề phụ', 'Nhập nội dung phụ / khẩu hiệu...', 36);
+  }
+
+  addCustomTextBlock(
+    type: 'title' | 'subtitle' | 'caption' | 'custom' = 'custom',
+    label: string = 'Hộp chữ mới',
+    content: string = 'Nhấp đúp chuột để sửa chữ...',
+    fontSize: number = 38
+  ): TextBlock | null {
     const template = this.selectedTemplate();
     const cw = template?.canvas.width || 1080;
     const ch = template?.canvas.height || 1350;
 
     const currentCount = this.textBlocks().length;
-    const newId = `subtitle_${Date.now()}`;
-    const titleBlock = this.textBlocks().find((b) => b.type === 'title');
+    const newId = `box_${Date.now()}`;
 
-    // Calculate Y position: place nicely below title or in bottom third
-    let defaultY = ch * 0.85;
-    if (titleBlock) {
-      defaultY = Math.min(ch * 0.9, titleBlock.y + 120);
-    }
+    // Place nicely near center or staggered
+    const offsetY = (currentCount % 5) * 60;
+    const defaultY = Math.min(ch * 0.85, ch * 0.5 + offsetY);
 
     const newBlock: TextBlock = {
       id: newId,
-      type: 'subtitle',
-      label: `Tiêu đề phụ ${currentCount > 1 ? currentCount : ''}`.trim(),
-      content: 'Nhập nội dung phụ / khẩu hiệu chi tiết...',
+      type,
+      label: `${label} ${currentCount > 0 ? currentCount + 1 : ''}`.trim(),
+      content,
       x: cw / 2,
       y: defaultY,
       align: 'center',
-      fontFamily: 'BeVietnamPro',
-      fontSize: 36,
-      minFontSize: 18,
-      maxFontSize: 48,
-      colorMode: 'auto',
+      fontFamily: 'Montserrat-Bold',
+      fontSize,
+      minFontSize: 16,
+      maxFontSize: 100,
+      colorMode: 'custom',
       color: '#ffffff',
       strokeColor: '#000000',
-      strokeWidth: 2,
+      strokeWidth: 4,
+      effect: 'shadow',
+      bold: true,
       removable: true,
       defaultX: cw / 2,
-      defaultY: defaultY,
+      defaultY,
     };
 
     this.textBlocks.update((blocks) => [...blocks, newBlock]);

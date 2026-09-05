@@ -1,9 +1,22 @@
 import { Injectable, signal } from '@angular/core';
-import { Canvas, FabricImage, Textbox, Line, Rect, FabricObject } from 'fabric';
+import { Canvas, FabricImage, Textbox, Line, Rect, FabricObject, Shadow } from 'fabric';
 import { Template, TextBlock } from '../models/template.model';
 
 const SNAP_THRESHOLD = 14;
 const EXPORT_MULTIPLIER = 2;
+
+export interface BlockModifiedEvent {
+  id: string;
+  x: number;
+  y: number;
+  width?: number;
+  fontSize?: number;
+}
+
+export interface TextInlineChangedEvent {
+  id: string;
+  text: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CanvasService {
@@ -14,19 +27,29 @@ export class CanvasService {
   private snapLineH: Line | null = null;
   private snapLineV: Line | null = null;
   private currentTemplate: Template | null = null;
+  private currentZoom: number = 1;
 
   readonly isCanvasReady = signal(false);
   readonly onBlockSelected = signal<string | null>(null);
+  readonly onBlockModified = signal<BlockModifiedEvent | null>(null);
+  readonly onTextInlineChanged = signal<TextInlineChangedEvent | null>(null);
+  readonly canvasDimensions = signal<{ width: number; height: number }>({ width: 1080, height: 1350 });
+  readonly displayDimensions = signal<{ width: number; height: number }>({ width: 1080, height: 1350 });
 
   initCanvas(canvasElement: HTMLCanvasElement, template: Template, blocks: TextBlock[] = []): void {
     this.dispose();
 
     this.currentTemplate = template;
+    const cw = template.canvas.width;
+    const ch = template.canvas.height;
+    this.canvasDimensions.set({ width: cw, height: ch });
+
     this.canvas = new Canvas(canvasElement, {
-      width: template.canvas.width,
-      height: template.canvas.height,
-      backgroundColor: '#f3f4f6',
+      width: cw,
+      height: ch,
+      backgroundColor: '#111827',
       selection: true,
+      preserveObjectStacking: true,
     });
 
     this.createDecorations();
@@ -55,12 +78,12 @@ export class CanvasService {
     this.currentTemplate = null;
     this.isCanvasReady.set(false);
     this.onBlockSelected.set(null);
+    this.onBlockModified.set(null);
+    this.onTextInlineChanged.set(null);
   }
 
   async setBackgroundImage(dataUrl: string): Promise<void> {
     if (!this.canvas || !this.currentTemplate) return;
-
-    const { width: cw, height: ch } = this.currentTemplate.canvas;
 
     if (this.backgroundImage) {
       this.canvas.remove(this.backgroundImage);
@@ -68,15 +91,26 @@ export class CanvasService {
     }
 
     const img = await FabricImage.fromURL(dataUrl);
-    const scaleX = cw / (img.width || 1);
-    const scaleY = ch / (img.height || 1);
-    const scale = Math.max(scaleX, scaleY); // cover mode
+    const imgW = img.width || 1080;
+    const imgH = img.height || 1350;
+
+    // Adapt canvas aspect ratio to uploaded image so image is never "tí tẹo" or awkwardly cropped
+    // Maintain standard HD resolution (base width 1080, height proportional)
+    const targetWidth = 1080;
+    const targetHeight = Math.round(targetWidth * (imgH / imgW));
+
+    // Update current template canvas and fabric dimensions
+    this.currentTemplate.canvas = { width: targetWidth, height: targetHeight };
+    this.canvasDimensions.set({ width: targetWidth, height: targetHeight });
+    this.canvas.setDimensions({ width: targetWidth, height: targetHeight });
+
+    const scale = targetWidth / imgW;
 
     img.set({
       scaleX: scale,
       scaleY: scale,
-      left: cw / 2,
-      top: ch / 2,
+      left: targetWidth / 2,
+      top: targetHeight / 2,
       originX: 'center',
       originY: 'center',
       selectable: false,
@@ -86,16 +120,40 @@ export class CanvasService {
     this.backgroundImage = img;
     this.canvas.insertAt(0, img);
 
-    // Keep decorations and textboxes above background
-    if (this.decorationBorder) {
-      this.canvas.bringObjectToFront(this.decorationBorder);
-    }
+    // Recreate decorations and snap lines for new dimensions
+    this.rebuildGuidesAndDecorations();
+
+    // Keep textboxes above background and re-apply auto contrast
     this.textboxes.forEach((tb) => {
       this.canvas?.bringObjectToFront(tb);
       this.applyAutoContrastForBox(tb);
     });
 
-    this.canvas.renderAll();
+    if (this.lastContainerWidth > 0 && this.lastContainerHeight > 0) {
+      this.fitToViewport(this.lastContainerWidth, this.lastContainerHeight);
+    } else {
+      this.canvas.renderAll();
+    }
+  }
+
+  private rebuildGuidesAndDecorations(): void {
+    if (!this.canvas || !this.currentTemplate) return;
+
+    if (this.decorationBorder) {
+      this.canvas.remove(this.decorationBorder);
+      this.decorationBorder = null;
+    }
+    if (this.snapLineH) {
+      this.canvas.remove(this.snapLineH);
+      this.snapLineH = null;
+    }
+    if (this.snapLineV) {
+      this.canvas.remove(this.snapLineV);
+      this.snapLineV = null;
+    }
+
+    this.createDecorations();
+    this.createSnapLines();
   }
 
   // === TextBlock Manipulation (Map<string, Textbox>) ===
@@ -106,47 +164,89 @@ export class CanvasService {
     let tb = this.textboxes.get(block.id);
     const cw = this.currentTemplate.canvas.width;
 
+    const isCustomColor = block.colorMode === 'custom';
+    const textContent = block.uppercase ? block.content.toUpperCase() : block.content;
+    const boxWidth = block.width || Math.min(cw * 0.85, 900);
+
     if (!tb) {
-      tb = new Textbox(block.content, {
+      tb = new Textbox(textContent, {
         left: block.x,
         top: block.y,
         originX: 'center',
         originY: 'center',
-        width: cw * 0.85,
+        width: boxWidth,
         fontFamily: block.fontFamily,
         fontSize: block.fontSize,
         textAlign: block.align,
-        fill: block.color || '#ffffff',
-        stroke: block.strokeColor || '#000000',
-        strokeWidth: block.strokeWidth || 2,
-        editable: false,
-        lockRotation: true,
-        lockScalingX: true,
+        fontWeight: block.bold ? 'bold' : 'normal',
+        fontStyle: block.italic ? 'italic' : 'normal',
+        charSpacing: block.letterSpacing ? block.letterSpacing * 10 : 0,
+        lineHeight: block.lineHeight || 1.2,
+        fill: isCustomColor ? block.color : '#ffffff',
+        stroke: this.computeStrokeColor(block),
+        strokeWidth: this.computeStrokeWidth(block),
+        paintFirst: 'stroke', // Photoshop-style: stroke is rendered behind fill so letters stay bold & legible!
+        backgroundColor: block.effect === 'background' ? (block.backgroundColor || 'rgba(0,0,0,0.75)') : '',
+        shadow: this.computeShadow(block),
+        editable: true, // PowerPoint-style: double click to edit text inline!
+        lockRotation: false,
+        lockScalingX: false,
         lockScalingY: true,
-        hasControls: false,
+        hasControls: true, // Show handles so user can grab, move, and adjust width!
         hasBorders: true,
-        borderColor: 'rgba(26, 86, 219, 0.7)',
-        cornerColor: 'rgba(26, 86, 219, 0.9)',
+        borderColor: '#3b82f6',
+        borderScaleFactor: 2,
+        cornerColor: '#2563eb',
+        cornerStrokeColor: '#ffffff',
+        cornerStyle: 'circle',
+        cornerSize: 12,
+        transparentCorners: false,
+        padding: 8,
+        cursorColor: '#2563eb',
       });
 
       // Attach custom ID to the fabric object
       (tb as unknown as Record<string, unknown>)['blockId'] = block.id;
 
-      this.constrainToBounds(tb);
+      // Inline editing sync (PowerPoint behavior)
+      tb.on('changed', () => {
+        this.onTextInlineChanged.set({
+          id: block.id,
+          text: tb?.text || '',
+        });
+      });
+
+      this.setupObjectMovementAndResize(tb, block.id);
       this.canvas.add(tb);
       this.textboxes.set(block.id, tb);
     } else {
       tb.set({
-        text: block.content,
+        text: textContent,
         fontFamily: block.fontFamily,
         fontSize: block.fontSize,
         left: block.x,
         top: block.y,
+        textAlign: block.align,
+        fontWeight: block.bold ? 'bold' : 'normal',
+        fontStyle: block.italic ? 'italic' : 'normal',
+        charSpacing: block.letterSpacing ? block.letterSpacing * 10 : 0,
+        lineHeight: block.lineHeight || 1.2,
+        stroke: this.computeStrokeColor(block),
+        strokeWidth: this.computeStrokeWidth(block),
+        paintFirst: 'stroke',
+        backgroundColor: block.effect === 'background' ? (block.backgroundColor || 'rgba(0,0,0,0.75)') : '',
+        shadow: this.computeShadow(block),
       });
+
+      if (isCustomColor) {
+        tb.set({ fill: block.color });
+      }
     }
 
     this.autoFitFontSizeForBox(tb, block);
-    this.applyAutoContrastForBox(tb);
+    if (!isCustomColor) {
+      this.applyAutoContrastForBox(tb);
+    }
     this.canvas.renderAll();
     return tb;
   }
@@ -158,16 +258,35 @@ export class CanvasService {
       return;
     }
 
+    const isCustomColor = block.colorMode === 'custom';
+    const textContent = block.uppercase ? block.content.toUpperCase() : block.content;
+
     tb.set({
-      text: block.content,
+      text: textContent,
       fontFamily: block.fontFamily,
       fontSize: block.fontSize,
       left: block.x,
       top: block.y,
+      textAlign: block.align,
+      fontWeight: block.bold ? 'bold' : 'normal',
+      fontStyle: block.italic ? 'italic' : 'normal',
+      charSpacing: block.letterSpacing ? block.letterSpacing * 10 : 0,
+      lineHeight: block.lineHeight || 1.2,
+      stroke: this.computeStrokeColor(block),
+      strokeWidth: this.computeStrokeWidth(block),
+      paintFirst: 'stroke',
+      backgroundColor: block.effect === 'background' ? (block.backgroundColor || 'rgba(0,0,0,0.75)') : '',
+      shadow: this.computeShadow(block),
     });
 
+    if (isCustomColor) {
+      tb.set({ fill: block.color });
+    }
+
     this.autoFitFontSizeForBox(tb, block);
-    this.applyAutoContrastForBox(tb);
+    if (!isCustomColor) {
+      this.applyAutoContrastForBox(tb);
+    }
     this.canvas?.renderAll();
   }
 
@@ -198,6 +317,14 @@ export class CanvasService {
     tb.setCoords();
     this.applyAutoContrastForBox(tb);
     this.canvas.renderAll();
+
+    this.onBlockModified.set({
+      id,
+      x: centerX,
+      y: tb.top!,
+      width: tb.width,
+      fontSize: tb.fontSize,
+    });
   }
 
   resetBlockPosition(block: TextBlock): void {
@@ -216,6 +343,14 @@ export class CanvasService {
     this.autoFitFontSizeForBox(tb, block);
     this.applyAutoContrastForBox(tb);
     this.canvas?.renderAll();
+
+    this.onBlockModified.set({
+      id: block.id,
+      x: targetX,
+      y: targetY,
+      width: tb.width,
+      fontSize: tb.fontSize,
+    });
   }
 
   // === Backward Compatibility for single text operations ===
@@ -236,6 +371,7 @@ export class CanvasService {
           colorMode: 'auto',
           color: '#ffffff',
           strokeColor: '#000000',
+          strokeWidth: 2,
           removable: false,
         });
       }
@@ -287,6 +423,43 @@ export class CanvasService {
     }
   }
 
+  private lastContainerWidth = 0;
+  private lastContainerHeight = 0;
+
+  fitToViewport(containerWidth: number, containerHeight: number): void {
+    if (containerWidth > 0 && containerHeight > 0) {
+      this.lastContainerWidth = containerWidth;
+      this.lastContainerHeight = containerHeight;
+    }
+
+    if (!this.canvas || !this.currentTemplate) return;
+    const { width: vW, height: vH } = this.canvasDimensions();
+    const cW = containerWidth || this.lastContainerWidth;
+    const cH = containerHeight || this.lastContainerHeight;
+    if (vW <= 0 || vH <= 0 || cW <= 0 || cH <= 0) return;
+
+    // Leave comfortable breathing padding around artboard
+    const padding = 32;
+    const availableW = Math.max(100, cW - padding);
+    const availableH = Math.max(100, cH - padding);
+
+    const zoom = Math.min(availableW / vW, availableH / vH, 1);
+    this.currentZoom = zoom;
+
+    const dW = Math.round(vW * zoom);
+    const dH = Math.round(vH * zoom);
+
+    this.displayDimensions.set({ width: dW, height: dH });
+    this.canvas.setDimensions({ width: dW, height: dH });
+    this.canvas.setZoom(zoom);
+    this.canvas.calcOffset();
+    this.canvas.renderAll();
+  }
+
+  getCurrentZoom(): number {
+    return this.currentZoom;
+  }
+
   exportToPng(): string | null {
     if (!this.canvas) return null;
 
@@ -294,10 +467,13 @@ export class CanvasService {
     this.hideSnapLines();
     this.canvas.renderAll();
 
+    // With viewport zoom applied, scale multiplier so exported image is 2x Super HD (virtual 2x)
+    const exportMultiplier = this.currentZoom > 0 ? EXPORT_MULTIPLIER / this.currentZoom : EXPORT_MULTIPLIER;
+
     return this.canvas.toDataURL({
       format: 'png',
       quality: 1,
-      multiplier: EXPORT_MULTIPLIER,
+      multiplier: exportMultiplier,
     });
   }
 
@@ -339,11 +515,11 @@ export class CanvasService {
   private autoFitFontSizeForBox(textbox: Textbox, block: TextBlock): void {
     if (!this.currentTemplate) return;
 
-    const maxWidth = this.currentTemplate.canvas.width * 0.85;
-    const maxHeight = this.currentTemplate.canvas.height * 0.35;
+    const maxWidth = this.currentTemplate.canvas.width * 0.92;
+    const maxHeight = this.currentTemplate.canvas.height * 0.45;
 
     let fontSize = block.fontSize || block.maxFontSize;
-    textbox.set({ fontSize, width: maxWidth });
+    textbox.set({ fontSize });
 
     while (fontSize > block.minFontSize) {
       const textWidth = textbox.calcTextWidth ? textbox.calcTextWidth() : (textbox.width || 0);
@@ -446,13 +622,14 @@ export class CanvasService {
   private setupSnapGuides(): void {
     if (!this.canvas || !this.currentTemplate) return;
 
-    const { width: cw, height: ch } = this.currentTemplate.canvas;
-    const centerX = cw / 2;
-    const centerY = ch / 2;
-
     this.canvas.on('object:moving', (e) => {
       const obj = e.target;
-      if (!obj || obj === this.snapLineH || obj === this.snapLineV) return;
+      if (!obj || obj === this.snapLineH || obj === this.snapLineV || !this.currentTemplate) return;
+
+      const cw = this.currentTemplate.canvas.width;
+      const ch = this.currentTemplate.canvas.height;
+      const centerX = cw / 2;
+      const centerY = ch / 2;
 
       const objCenterX = obj.left!;
       const objCenterY = obj.top!;
@@ -481,6 +658,16 @@ export class CanvasService {
       this.hideSnapLines();
       const obj = e.target;
       if (obj && obj instanceof Textbox) {
+        const blockId = (obj as unknown as Record<string, unknown>)['blockId'] as string;
+        if (blockId) {
+          this.onBlockModified.set({
+            id: blockId,
+            x: obj.left!,
+            y: obj.top!,
+            width: obj.width,
+            fontSize: obj.fontSize,
+          });
+        }
         this.applyAutoContrastForBox(obj);
       }
       this.canvas?.renderAll();
@@ -509,26 +696,79 @@ export class CanvasService {
     this.snapLineH?.set({ visible: false });
   }
 
-  private constrainToBounds(obj: FabricObject): void {
-    if (!this.canvas || !this.currentTemplate) return;
+  private setupObjectMovementAndResize(obj: FabricObject, blockId: string): void {
+    if (!this.canvas) return;
 
-    const { width: cw, height: ch } = this.currentTemplate.canvas;
-
-    this.canvas.on('object:moving', (e) => {
-      if (e.target !== obj) return;
-
-      const bounds = obj.getBoundingRect();
-      const halfW = bounds.width / 2;
-      const halfH = bounds.height / 2;
+    // Free dragging with soft boundary clamping (never locking or freezing movement!)
+    obj.on('moving', () => {
+      if (!this.currentTemplate) return;
+      const cw = this.currentTemplate.canvas.width;
+      const ch = this.currentTemplate.canvas.height;
 
       let left = obj.left!;
       let top = obj.top!;
 
-      left = Math.max(halfW + 10, Math.min(cw - halfW - 10, left));
-      top = Math.max(halfH + 10, Math.min(ch - halfH - 10, top));
+      // Soft clamp keeps the object center inside reasonable canvas view
+      left = Math.max(30, Math.min(cw - 30, left));
+      top = Math.max(30, Math.min(ch - 30, top));
 
       obj.set({ left, top });
       obj.setCoords();
     });
+  }
+
+  private computeStrokeColor(block: TextBlock): string {
+    if (block.effect === 'stroke') {
+      return block.strokeColor || '#000000';
+    }
+    if (block.colorMode === 'custom') {
+      return block.strokeColor || 'transparent';
+    }
+    return '#000000';
+  }
+
+  private computeStrokeWidth(block: TextBlock): number {
+    if (block.effect === 'stroke') {
+      return block.strokeWidth || 6;
+    }
+    if (block.colorMode === 'custom') {
+      return block.strokeWidth ?? 0;
+    }
+    return 2;
+  }
+
+  private computeShadow(block: TextBlock): Shadow | null {
+    if (!block.effect || block.effect === 'none') {
+      return null;
+    }
+
+    if (block.effect === 'shadow') {
+      return new Shadow({
+        color: block.shadowColor || 'rgba(0, 0, 0, 0.85)',
+        blur: block.shadowBlur ?? 14,
+        offsetX: block.shadowOffsetX ?? 6,
+        offsetY: block.shadowOffsetY ?? 8,
+      });
+    }
+
+    if (block.effect === 'deep-shadow') {
+      return new Shadow({
+        color: block.shadowColor || 'rgba(0, 0, 0, 0.95)',
+        blur: block.shadowBlur ?? 24,
+        offsetX: block.shadowOffsetX ?? 10,
+        offsetY: block.shadowOffsetY ?? 14,
+      });
+    }
+
+    if (block.effect === 'glow') {
+      return new Shadow({
+        color: block.shadowColor || 'rgba(250, 204, 21, 0.95)',
+        blur: block.shadowBlur ?? 28,
+        offsetX: 0,
+        offsetY: 0,
+      });
+    }
+
+    return null;
   }
 }

@@ -129,4 +129,41 @@ describe('CanvasService', () => {
     expect(dataUrl).toBeTruthy();
     expect(typeof dataUrl).toBe('string');
   });
+
+  it('should support fitToViewport and scale canvas zoom proportionally', () => {
+    const canvasEl = document.createElement('canvas');
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
+
+    service.fitToViewport(600, 800);
+    expect(service.getCurrentZoom()).toBeLessThan(1);
+    expect(service.getCurrentZoom()).toBeGreaterThan(0);
+
+    const dims = service.displayDimensions();
+    expect(dims.width).toBeLessThanOrEqual(600);
+    expect(dims.height).toBeLessThanOrEqual(800);
+  });
+
+  it('should support typography formatting (bold, italic, uppercase, shadow, background)', () => {
+    const canvasEl = document.createElement('canvas');
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
+
+    const formattedBlock: TextBlock = {
+      ...mockBlock,
+      id: 'formatted',
+      content: 'Chữ Đậm Nghiêng Hoa',
+      bold: true,
+      italic: true,
+      uppercase: true,
+      effect: 'shadow',
+      shadowColor: '#000000',
+    };
+
+    const tb = service.renderTextBlock(formattedBlock);
+    expect(tb).not.toBeNull();
+    expect(tb?.text).toBe('CHỮ ĐẬM NGHIÊNG HOA');
+    expect(tb?.fontWeight).toBe('bold');
+    expect(tb?.fontStyle).toBe('italic');
+    expect(tb?.shadow).toBeTruthy();
+  });
 });
+

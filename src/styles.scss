@@ -48,8 +48,8 @@ body {
 
 /* === Design Tokens === */
 :root {
-  --color-primary: #1a56db;
-  --color-primary-hover: #1648b8;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
   --color-primary-light: #eff6ff;
   --color-success: #059669;
   --color-success-hover: #047857;
@@ -57,12 +57,18 @@ body {
   --color-danger-hover: #b91c1c;
   --color-warning: #d97706;
 
-  --color-bg: #f8fafc;
+  --color-bg: #0f172a;
+  --color-studio-bg: #1e293b;
   --color-surface: #ffffff;
+  --color-panel-bg: #0f172a;
+  --color-panel-surface: #1e293b;
   --color-border: #e2e8f0;
   --color-border-hover: #cbd5e1;
+  --color-dark-border: #334155;
   --color-text: #0f172a;
   --color-text-secondary: #64748b;
+  --color-text-light: #f8fafc;
+  --color-text-muted: #94a3b8;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -163,3 +169,26 @@ body {
   padding: 12px 24px;
   font-size: 1.05rem;
 }
+
+.btn-studio {
+  background-color: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+
+  &:hover:not(:disabled) {
+    background-color: #475569;
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.btn-accent {
+  background-color: var(--color-primary);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+  }
+}
+
