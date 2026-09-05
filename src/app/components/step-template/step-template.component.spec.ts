@@ -1,7 +1,8 @@
-﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StepTemplateComponent } from './step-template.component';
 import { TemplateService } from '../../services/template.service';
 import { EditorStateService } from '../../services/editor-state.service';
+import { FileService } from '../../services/file.service';
 
 describe('StepTemplateComponent', () => {
   let component: StepTemplateComponent;
@@ -12,7 +13,7 @@ describe('StepTemplateComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StepTemplateComponent],
-      providers: [TemplateService, EditorStateService],
+      providers: [TemplateService, EditorStateService, FileService],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StepTemplateComponent);

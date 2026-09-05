@@ -1,6 +1,6 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { CanvasService } from './canvas.service';
-import { Template } from '../models/template.model';
+import { Template, TextBlock } from '../models/template.model';
 
 describe('CanvasService', () => {
   let service: CanvasService;
@@ -29,6 +29,27 @@ describe('CanvasService', () => {
     },
   };
 
+  const mockBlock: TextBlock = {
+    id: 'title',
+    type: 'title',
+    label: 'Tiêu đề chính',
+    content: 'VĂN BẢN MẶC ĐỊNH',
+    x: 540,
+    y: 1100,
+    align: 'center',
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 64,
+    minFontSize: 24,
+    maxFontSize: 64,
+    colorMode: 'auto',
+    color: '#ffffff',
+    strokeColor: '#000000',
+    strokeWidth: 2,
+    removable: false,
+    defaultX: 540,
+    defaultY: 1100,
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [CanvasService],
@@ -42,7 +63,7 @@ describe('CanvasService', () => {
 
   it('should initialize and dispose canvas properly', () => {
     const canvasEl = document.createElement('canvas');
-    service.initCanvas(canvasEl, mockTemplate);
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
 
     expect(service.isCanvasReady()).toBe(true);
     expect(service.getCanvas()).not.toBeNull();
@@ -52,50 +73,97 @@ describe('CanvasService', () => {
     expect(service.getCanvas()).toBeNull();
   });
 
-  it('should create and update text on canvas', () => {
+  it('should render and update multiple text blocks on canvas', () => {
     const canvasEl = document.createElement('canvas');
-    service.initCanvas(canvasEl, mockTemplate);
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
 
-    service.setText('TIÊU ĐỀ KIỂM THỬ', 'BeVietnamPro-Bold');
+    const subtitleBlock: TextBlock = {
+      id: 'sub_1',
+      type: 'subtitle',
+      label: 'Tiêu đề phụ',
+      content: 'DÒNG CHỮ PHỤ',
+      x: 540,
+      y: 1200,
+      align: 'center',
+      fontFamily: 'BeVietnamPro',
+      fontSize: 36,
+      minFontSize: 18,
+      maxFontSize: 48,
+      colorMode: 'auto',
+      color: '#ffffff',
+      strokeColor: '#000000',
+      strokeWidth: 2,
+      removable: true,
+    };
 
-    const textbox = service.getTextbox();
-    expect(textbox).not.toBeNull();
-    expect(textbox?.text).toBe('TIÊU ĐỀ KIỂM THỬ');
-    expect(textbox?.fontFamily).toBe('BeVietnamPro-Bold');
-  });
+    service.renderTextBlock(subtitleBlock);
+    const tb = service.getTextbox('sub_1');
+    expect(tb).not.toBeNull();
+    expect(tb?.text).toBe('DÒNG CHỮ PHỤ');
 
-  it('should update font family dynamically', () => {
-    const canvasEl = document.createElement('canvas');
-    service.initCanvas(canvasEl, mockTemplate);
+    service.centerHorizontally('sub_1');
+    expect(tb?.left).toBe(mockTemplate.canvas.width / 2);
 
-    service.setText('CHỮ MẪU');
-    service.setFontFamily('BeVietnamPro');
-
-    const textbox = service.getTextbox();
-    expect(textbox?.fontFamily).toBe('BeVietnamPro');
+    service.removeTextBlock('sub_1');
+    expect(service.getTextbox('sub_1')).toBeNull();
   });
 
   it('should reset text position back to template defaults', () => {
     const canvasEl = document.createElement('canvas');
-    service.initCanvas(canvasEl, mockTemplate);
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
 
-    service.setText('CHỮ MẪU');
-    const textbox = service.getTextbox();
-    textbox?.set({ left: 100, top: 200 });
+    const tb = service.getTextbox('title');
+    tb?.set({ left: 100, top: 200 });
 
-    service.resetTextPosition();
+    service.resetBlockPosition(mockBlock);
 
-    expect(textbox?.left).toBe(mockTemplate.textDefault.x);
-    expect(textbox?.top).toBe(mockTemplate.textDefault.y);
+    expect(tb?.left).toBe(mockTemplate.textDefault.x);
+    expect(tb?.top).toBe(mockTemplate.textDefault.y);
   });
 
   it('should export canvas to PNG data URL', () => {
     const canvasEl = document.createElement('canvas');
-    service.initCanvas(canvasEl, mockTemplate);
-    service.setText('CHÀO MỪNG');
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
 
     const dataUrl = service.exportToPng();
     expect(dataUrl).toBeTruthy();
     expect(typeof dataUrl).toBe('string');
   });
+
+  it('should support fitToViewport and scale canvas zoom proportionally', () => {
+    const canvasEl = document.createElement('canvas');
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
+
+    service.fitToViewport(600, 800);
+    expect(service.getCurrentZoom()).toBeLessThan(1);
+    expect(service.getCurrentZoom()).toBeGreaterThan(0);
+
+    const dims = service.displayDimensions();
+    expect(dims.width).toBeLessThanOrEqual(600);
+    expect(dims.height).toBeLessThanOrEqual(800);
+  });
+
+  it('should support typography formatting (bold, italic, uppercase, shadow, background)', () => {
+    const canvasEl = document.createElement('canvas');
+    service.initCanvas(canvasEl, mockTemplate, [mockBlock]);
+
+    const formattedBlock: TextBlock = {
+      ...mockBlock,
+      id: 'formatted',
+      content: 'Chữ Đậm Nghiêng Hoa',
+      bold: true,
+      italic: true,
+      uppercase: true,
+      effect: 'shadow',
+      shadowColor: '#000000',
+    };
+
+    const tb = service.renderTextBlock(formattedBlock);
+    expect(tb).not.toBeNull();
+    expect(tb?.text).toBe('CHỮ ĐẬM NGHIÊNG HOA');
+    expect(tb?.fontWeight).toBe('bold');
+    expect(tb?.fontStyle).toBe('italic');
+    expect(tb?.shadow).toBeTruthy();
+  });
 });
+

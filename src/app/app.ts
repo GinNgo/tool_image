@@ -1,17 +1,19 @@
 import { Component } from '@angular/core';
-import { WizardComponent } from './components/wizard/wizard.component';
+import { StudioComponent } from './components/studio/studio.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [WizardComponent],
-  template: `<app-wizard />`,
+  imports: [StudioComponent],
+  template: `<app-studio />`,
   styles: `
     :host {
       display: block;
-      width: 100%;
+      width: 100vw;
       height: 100vh;
+      overflow: hidden;
     }
   `,
 })
 export class App {}
+

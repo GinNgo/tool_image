@@ -8,7 +8,7 @@
 }
 
 @font-face {
-  font-family: 'BeVietnamPro';
+  font-family: 'BeVietnamPro-Bold';
   src: url('assets/fonts/BeVietnamPro-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
@@ -37,35 +37,45 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'BeVietnamPro', 'Segoe UI', sans-serif;
+  font-family: 'BeVietnamPro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: #1a1a2e;
-  background-color: #f5f5f7;
+  background-color: #f8fafc;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* === Design Tokens === */
 :root {
-  --color-primary: #1a56db;
-  --color-primary-hover: #1648b8;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
   --color-success: #059669;
+  --color-success-hover: #047857;
   --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
   --color-warning: #d97706;
 
-  --color-bg: #f5f5f7;
+  --color-bg: #0f172a;
+  --color-studio-bg: #1e293b;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-  --color-text: #1a1a2e;
-  --color-text-secondary: #6b7280;
+  --color-panel-bg: #0f172a;
+  --color-panel-surface: #1e293b;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+  --color-dark-border: #334155;
+  --color-text: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-light: #f8fafc;
+  --color-text-muted: #94a3b8;
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
 
   --transition-fast: 150ms ease;
@@ -85,17 +95,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 8px 16px;
   border: none;
   border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast),
-              transform var(--transition-fast),
-              box-shadow var(--transition-fast);
+  transition: all var(--transition-fast);
   user-select: none;
+  line-height: 1.2;
 
   &:active {
     transform: scale(0.97);
@@ -124,7 +133,8 @@ body {
   border: 1px solid var(--color-border);
 
   &:hover:not(:disabled) {
-    background-color: #f0f0f3;
+    background-color: #f1f5f9;
+    border-color: var(--color-border-hover);
     box-shadow: var(--shadow-sm);
   }
 }
@@ -134,12 +144,51 @@ body {
   color: #fff;
 
   &:hover:not(:disabled) {
-    background-color: #047857;
+    background-color: var(--color-success-hover);
     box-shadow: var(--shadow-sm);
   }
 }
 
+.btn-danger {
+  background-color: #fee2e2;
+  color: var(--color-danger);
+  border: 1px solid #fecaca;
+
+  &:hover:not(:disabled) {
+    background-color: #fecaca;
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
 .btn-lg {
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: 12px 24px;
   font-size: 1.05rem;
 }
+
+.btn-studio {
+  background-color: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+
+  &:hover:not(:disabled) {
+    background-color: #475569;
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.btn-accent {
+  background-color: var(--color-primary);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+  }
+}
+
