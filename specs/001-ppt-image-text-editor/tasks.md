@@ -16,10 +16,10 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Clean app structure and verify Angular 18 standalone configuration in `src/app/app.ts` and `src/app/app.config.ts`
-- [ ] T002 Install Fabric.js dependency (`npm install fabric`)
-- [ ] T003 Create models definition file `src/app/models/project.model.ts` matching `data-model.md`
-- [ ] T004 Create base structure for main components (Studio, Sidebar, Toolbar) in `src/app/components/studio/`
+- [x] T001 Clean app structure and verify Angular 18 standalone configuration in `src/app/app.ts` and `src/app/app.config.ts`
+- [x] T002 Install Fabric.js dependency (`npm install fabric`)
+- [x] T003 Create models definition file `src/app/models/project.model.ts` matching `data-model.md`
+- [x] T004 Create base structure for main components (Studio, Sidebar, Toolbar) in `src/app/components/studio/`
 
 ---
 
@@ -29,8 +29,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Implement `CanvasService` wrapper `src/app/services/canvas.service.ts` to initialize Fabric.js canvas and handle viewport resizing (responsive scaling)
-- [ ] T006 Implement `EditorStateService` in `src/app/services/editor-state.service.ts` to hold global state (active object, background image, project config)
+- [x] T005 Implement `CanvasService` wrapper `src/app/services/canvas.service.ts` to initialize Fabric.js canvas and handle viewport resizing (responsive scaling)
+- [x] T006 Implement `EditorStateService` in `src/app/services/editor-state.service.ts` to hold global state (active object, background image, project config)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -42,13 +42,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Build `SidebarDrawerComponent` UI for "Tải ảnh nền" (Upload Image) button in `src/app/components/studio/sidebar-drawer.component.ts`
-- [ ] T008 [P] [US1] Implement `FileService` image loading (File -> Base64 Data URL) in `src/app/services/file.service.ts`
-- [ ] T009 [US1] Add setBackgroundImage method in `CanvasService` that adjusts canvas aspect ratio and sets Fabric background image
-- [ ] T010 [US1] Build `TopToolbarComponent` with "+ Thêm hộp chữ" button in `src/app/components/studio/top-toolbar.component.ts`
-- [ ] T011 [US1] Implement addTextBox method in `CanvasService` using `fabric.Textbox` and handle object selection events
-- [ ] T012 [US1] Connect selection events from `CanvasService` to `EditorStateService` to update active object state
-- [ ] T013 [US1] Assemble `StudioComponent` tying Toolbar, Sidebar, and Canvas wrapper together in `src/app/components/studio/studio.component.ts`
+- [x] T007 [P] [US1] Build `SidebarDrawerComponent` UI for "Tải ảnh nền" (Upload Image) button in `src/app/components/studio/sidebar-drawer.component.ts`
+- [x] T008 [P] [US1] Implement `FileService` image loading (File -> Base64 Data URL) in `src/app/services/file.service.ts`
+- [x] T009 [US1] Add setBackgroundImage method in `CanvasService` that adjusts canvas aspect ratio and sets Fabric background image
+- [x] T010 [US1] Build `TopToolbarComponent` with "+ Thêm hộp chữ" button in `src/app/components/studio/top-toolbar.component.ts`
+- [x] T011 [US1] Implement addTextBox method in `CanvasService` using `fabric.Textbox` and handle object selection events
+- [x] T012 [US1] Connect selection events from `CanvasService` to `EditorStateService` to update active object state
+- [x] T013 [US1] Assemble `StudioComponent` tying Toolbar, Sidebar, and Canvas wrapper together in `src/app/components/studio/studio.component.ts`
 
 **Checkpoint**: At this point, User Story 1 MVP is fully functional (users can load an image and add/move default text boxes).
 
@@ -60,11 +60,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] Implement `FontService` providing curated Vietnamese Google Fonts array and `@font-face` dynamic loading in `src/app/services/font.service.ts`
-- [ ] T015 [P] [US2] Extend `TopToolbarComponent` with UI controls: Font Select, Size Stepper, Color Picker, Alignment buttons, Bold, Italic.
-- [ ] T016 [US2] Implement formatting update methods in `CanvasService` (`updateActiveTextFormat`)
-- [ ] T017 [US2] Bind TopToolbar controls to `EditorStateService` and `CanvasService` to apply styles instantly
-- [ ] T018 [US2] Implement Stroke and Shadow toggle (layer effects) in `TopToolbarComponent` and `CanvasService`
+- [x] T014 [P] [US2] Implement `FontService` providing curated Vietnamese Google Fonts array and `@font-face` dynamic loading in `src/app/services/font.service.ts`
+- [x] T015 [P] [US2] Extend `TopToolbarComponent` with UI controls: Font Select, Size Stepper, Color Picker, Alignment buttons, Bold, Italic.
+- [x] T016 [US2] Implement formatting update methods in `CanvasService` (`updateActiveTextFormat`)
+- [x] T017 [US2] Bind TopToolbar controls to `EditorStateService` and `CanvasService` to apply styles instantly
+- [x] T018 [US2] Implement Stroke and Shadow toggle (layer effects) in `TopToolbarComponent` and `CanvasService`
 
 **Checkpoint**: Text boxes can now be styled with rich formatting and beautiful Vietnamese fonts.
 
@@ -76,9 +76,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Configure Fabric `Textbox` controls in `CanvasService` to restrict scaling to width only (preventing stretched distortion) and enable word wrapping
-- [ ] T020 [US3] Add `@HostListener('window:keydown')` in `StudioComponent` for Arrow keys (nudge 2px / 10px) and Delete/Backspace (remove active box)
-- [ ] T021 [US3] Ensure keyboard shortcuts bypass typing when `isEditing` is true on the active Fabric textbox
+- [x] T019 [US3] Configure Fabric `Textbox` controls in `CanvasService` to restrict scaling to width only (preventing stretched distortion) and enable word wrapping
+- [x] T020 [US3] Add `@HostListener('window:keydown')` in `StudioComponent` for Arrow keys (nudge 2px / 10px) and Delete/Backspace (remove active box)
+- [x] T021 [US3] Ensure keyboard shortcuts bypass typing when `isEditing` is true on the active Fabric textbox
 
 **Checkpoint**: Users get a natural, PowerPoint-like object manipulation experience.
 
@@ -90,9 +90,9 @@
 
 ### Implementation for User Story 4
 
-- [ ] T022 [P] [US4] Implement `getProjectState` and `loadProjectState` serialization logic converting Fabric canvas JSON to `Project` model in `EditorStateService`
-- [ ] T023 [US4] Implement "Lưu dự án" (download `.json`) and "Mở dự án" (upload `.json`) in `SidebarDrawerComponent` and `FileService`
-- [ ] T024 [US4] Modify background upload logic to allow replacing the background while keeping the canvas aspect ratio and text positions intact
+- [x] T022 [P] [US4] Implement `getProjectState` and `loadProjectState` serialization logic converting Fabric canvas JSON to `Project` model in `EditorStateService`
+- [x] T023 [US4] Implement "Lưu dự án" (download `.json`) and "Mở dự án" (upload `.json`) in `SidebarDrawerComponent` and `FileService`
+- [x] T024 [US4] Modify background upload logic to allow replacing the background while keeping the canvas aspect ratio and text positions intact
 
 **Checkpoint**: Multi-session capability and text layout reusability achieved.
 
@@ -104,8 +104,8 @@
 
 ### Implementation for User Story 5
 
-- [ ] T025 [P] [US5] Implement `exportToPng` method in `CanvasService` handling multiplier scaling for high-res output matching original background dimensions
-- [ ] T026 [US5] Add "Xuất ảnh" button to `TopToolbarComponent` or `SidebarDrawerComponent` linking to `FileService` download trigger
+- [x] T025 [P] [US5] Implement `exportToPng` method in `CanvasService` handling multiplier scaling for high-res output matching original background dimensions
+- [x] T026 [US5] Add "Xuất ảnh" button to `TopToolbarComponent` or `SidebarDrawerComponent` linking to `FileService` download trigger
 
 **Checkpoint**: The final artwork can be saved as a high-quality PNG.
 
@@ -115,9 +115,9 @@
 
 **Goal**: UI refinement and unit testing.
 
-- [ ] T027 Add a clean, Canva-style dark mode SCSS styling in `src/styles.scss`
-- [ ] T028 Fix any strict TypeScript nullability issues (`strict: true`)
-- [ ] T029 Run Karma tests and verify clean build (`npm run build`)
+- [x] T027 Add a clean, Canva-style dark mode SCSS styling in `src/styles.scss`
+- [x] T028 Fix any strict TypeScript nullability issues (`strict: true`)
+- [x] T029 Run Karma tests and verify clean build (`npm run build`)
 
 ---
 
