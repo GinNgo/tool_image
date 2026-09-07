@@ -193,11 +193,14 @@ export class CanvasService {
       const imgWidth = width || img.width || 1080;
       const imgHeight = height || img.height || 1080;
 
-      // Clean up previous background object
+      // Clean up previous background object by reference or by name
       if (this.bgImage) {
         this.canvas.remove(this.bgImage);
-        this.bgImage = null;
       }
+      const existingBgs = this.canvas.getObjects().filter(o => (o as any).name === 'bg_image');
+      existingBgs.forEach(bg => this.canvas?.remove(bg));
+
+      this.bgImage = null;
       this.canvas.backgroundImage = undefined;
       this.bgImage = img;
 
@@ -337,10 +340,14 @@ export class CanvasService {
 
   removeBackgroundImage(): void {
     if (!this.canvas) return;
+
     if (this.bgImage) {
       this.canvas.remove(this.bgImage);
-      this.bgImage = null;
     }
+    const existingBgs = this.canvas.getObjects().filter(o => (o as any).name === 'bg_image');
+    existingBgs.forEach(bg => this.canvas?.remove(bg));
+
+    this.bgImage = null;
     this.canvas.backgroundImage = undefined;
     this.editorState.setBackgroundImage(null);
     this.canvas.requestRenderAll();
@@ -502,6 +509,16 @@ export class CanvasService {
     return new Promise((resolve) => {
       if (!this.canvas) return resolve();
       this.canvas.loadFromJSON(json, () => {
+        // Re-bind this.bgImage if one was saved with name === 'bg_image'
+        const foundBg = this.canvas?.getObjects().find(o => (o as any).name === 'bg_image') as fabric.Image;
+        if (foundBg) {
+          this.bgImage = foundBg;
+          // Ensure it cannot be selected directly unless edit mode is enabled
+          foundBg.set({
+            selectable: false,
+            evented: false
+          });
+        }
         this.canvas?.requestRenderAll();
         resolve();
       });

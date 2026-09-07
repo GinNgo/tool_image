@@ -357,7 +357,7 @@ export class SidebarDrawerComponent {
     };
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    this.fileService.downloadFile(url, 'du-an-thiet-ke.json');
+    this.fileService.downloadFile(url, `${this.editorState.projectTitle() || 'du-an-thiet-ke'}.json`);
   }
 
   async onOpenProject(event: Event): Promise<void> {
@@ -371,20 +371,18 @@ export class SidebarDrawerComponent {
       }
 
       if (project.canvasSize) {
-        this.editorState.canvasSize.set(project.canvasSize);
-      }
-
-      if (project.backgroundImage) {
-        this.canvasService.setBackgroundImage(
-          project.backgroundImage,
-          project.canvasSize.width,
-          project.canvasSize.height
-        );
+        this.canvasService.setCanvasDimensions(project.canvasSize.width, project.canvasSize.height);
       }
 
       if (project.canvasData) {
         await this.canvasService.loadCanvasObjectsJson(project.canvasData);
       }
+
+      if (project.backgroundImage) {
+        this.editorState.setBackgroundImage(project.backgroundImage, project.canvasSize);
+      }
+
+      input.value = '';
     }
   }
 }
