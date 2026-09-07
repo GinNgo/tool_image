@@ -184,21 +184,30 @@ export class CanvasService {
   setBackgroundImage(url: string, width: number, height: number): void {
     if (!this.canvas) return;
 
-    this.editorState.setBackgroundImage(url, { width, height });
+    // Keep current canvas size, don't shrink it to the image!
+    const baseSize = this.editorState.canvasSize();
 
-    // We update base size, but we need to re-trigger resize to fix zoom
-    const containerEl = this.canvas.getElement().parentElement?.parentElement;
+    this.editorState.setBackgroundImage(url);
 
     fabric.Image.fromURL(url).then((img) => {
-      // Fit to canvas strictly by setting width/height
       if (this.canvas) {
-        this.canvas.setDimensions({ width, height });
+        // Calculate scale to COVER the canvas (like object-fit: cover)
+        const scaleX = baseSize.width / img.width!;
+        const scaleY = baseSize.height / img.height!;
+        const scale = Math.max(scaleX, scaleY);
+
+        img.scale(scale);
+
+        // Center the image
+        img.set({
+          originX: 'center',
+          originY: 'center',
+          left: baseSize.width / 2,
+          top: baseSize.height / 2
+        });
+
         this.canvas.backgroundImage = img;
         this.canvas.requestRenderAll();
-
-        if (containerEl) {
-          this.updateCanvasDisplaySize(containerEl.clientWidth, containerEl.clientHeight);
-        }
       }
     });
   }

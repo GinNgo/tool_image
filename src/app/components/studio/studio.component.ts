@@ -40,23 +40,29 @@ import { TopToolbarComponent } from './top-toolbar.component';
       overflow: hidden;
     }
     .layout-sidebar {
-      flex: 0 0 250px;
+      flex: 0 0 320px;
       z-index: 5;
     }
     .layout-workspace {
       flex: 1 1 auto;
-      background: #e2e8f0;
+      background: #020617; /* Slate 950 - Deep dark canvas background */
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       padding: 40px;
+      /* Subtle dot pattern for workspace */
+      background-image: radial-gradient(#334155 1px, transparent 1px);
+      background-size: 20px 20px;
     }
     .canvas-wrapper {
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
       /* Container for fabric.js */
       display: flex;
+      background-color: transparent;
+      border-radius: 2px;
+      overflow: hidden;
     }
   `]
 })
