@@ -103,16 +103,17 @@ import { FontService } from '../../services/font.service';
 
         <!-- Khi không chọn hộp chữ nào (Trạng thái Canvas chung) -->
         <div class="canvas-quick-tools" *ngIf="!editorState.activeTextBlock()">
-          <span class="quick-label">Kích thước khung hình:</span>
+          <span class="quick-label">Khung hình:</span>
+          <span class="dimension-indicator">{{ editorState.canvasSize().width }} × {{ editorState.canvasSize().height }} px</span>
           <div class="dimension-badges">
             <button class="badge" [class.active]="isSize(1080, 1080)" (click)="setCanvasSize(1080, 1080)">
               Vuông (1:1)
             </button>
             <button class="badge" [class.active]="isSize(1080, 1350)" (click)="setCanvasSize(1080, 1350)">
-              Dọc bài đăng (4:5)
+              Dọc (4:5)
             </button>
             <button class="badge" [class.active]="isSize(1920, 1080)" (click)="setCanvasSize(1920, 1080)">
-              Ngang HD (16:9)
+              Ngang (16:9)
             </button>
           </div>
         </div>
@@ -327,6 +328,15 @@ import { FontService } from '../../services/font.service';
       font-size: 0.85rem;
       color: #94a3b8;
     }
+    .dimension-indicator {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #38bdf8;
+      background: #1e293b;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
     .dimension-badges {
       display: flex;
       gap: 8px;
@@ -399,17 +409,7 @@ export class TopToolbarComponent {
   }
 
   setCanvasSize(w: number, h: number): void {
-    this.editorState.canvasSize.set({ width: w, height: h });
-    // Update background image if any
-    const bg = this.editorState.backgroundImage();
-    if (bg) {
-      this.canvasService.setBackgroundImage(bg, w, h);
-    }
-    // Re-trigger resize
-    const container = document.querySelector('.layout-workspace') as HTMLElement;
-    if (container) {
-      (this.canvasService as any).updateCanvasDisplaySize(container.clientWidth, container.clientHeight);
-    }
+    this.canvasService.setCanvasDimensions(w, h);
   }
 
   onExportClick(): void {

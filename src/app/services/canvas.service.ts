@@ -184,46 +184,97 @@ export class CanvasService {
   private bgImage: fabric.Image | null = null;
   public isBgEditing = false;
 
-  setBackgroundImage(url: string, width?: number, height?: number): void {
+  setBackgroundImage(url: string, width?: number, height?: number, fitMode: 'match-image' | 'cover' = 'match-image'): void {
     if (!this.canvas) return;
-
-    const baseSize = this.editorState.canvasSize();
-    this.editorState.setBackgroundImage(url);
-
-    // Remove existing background object if present
-    if (this.bgImage) {
-      this.canvas.remove(this.bgImage);
-      this.bgImage = null;
-    }
-    // Also clear canvas.backgroundImage just in case
-    this.canvas.backgroundImage = undefined;
 
     fabric.Image.fromURL(url).then((img) => {
       if (!this.canvas) return;
 
+      const imgWidth = width || img.width || 1080;
+      const imgHeight = height || img.height || 1080;
+
+      // Clean up previous background object
+      if (this.bgImage) {
+        this.canvas.remove(this.bgImage);
+        this.bgImage = null;
+      }
+      this.canvas.backgroundImage = undefined;
       this.bgImage = img;
 
-      // Calculate scale to COVER the canvas (like object-fit: cover)
-      const scaleX = baseSize.width / img.width!;
-      const scaleY = baseSize.height / img.height!;
-      const scale = Math.max(scaleX, scaleY);
+      if (fitMode === 'match-image') {
+        // Tự động điều chỉnh kích thước Canvas khớp 100% với kích thước pixel gốc của ảnh!
+        this.editorState.setBackgroundImage(url, { width: imgWidth, height: imgHeight });
+        this.canvas.setDimensions({ width: imgWidth, height: imgHeight });
 
-      img.set({
+        img.set({
+          scaleX: 1,
+          scaleY: 1,
+          originX: 'left',
+          originY: 'top',
+          left: 0,
+          top: 0,
+          selectable: false,
+          evented: false,
+          name: 'bg_image'
+        });
+      } else {
+        // Giữ kích thước Canvas hiện tại và scale ảnh phủ kín
+        const baseSize = this.editorState.canvasSize();
+        this.editorState.setBackgroundImage(url);
+
+        const scale = Math.max(baseSize.width / imgWidth, baseSize.height / imgHeight);
+        img.set({
+          scaleX: scale,
+          scaleY: scale,
+          originX: 'center',
+          originY: 'center',
+          left: baseSize.width / 2,
+          top: baseSize.height / 2,
+          selectable: false,
+          evented: false,
+          name: 'bg_image'
+        });
+      }
+
+      this.canvas.add(img);
+      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(img) : (this.canvas as any).sendToBack(img);
+
+      // Cập nhật lại zoom hiển thị để vừa vặn hoàn hảo trong màn hình làm việc
+      const containerEl = document.querySelector('.layout-workspace') as HTMLElement;
+      if (containerEl) {
+        this.updateCanvasDisplaySize(containerEl.clientWidth, containerEl.clientHeight);
+      } else {
+        this.canvas.requestRenderAll();
+      }
+    });
+  }
+
+  setCanvasDimensions(width: number, height: number): void {
+    if (!this.canvas) return;
+
+    this.editorState.canvasSize.set({ width, height });
+    this.canvas.setDimensions({ width, height });
+
+    // Nếu đang có ảnh nền, tự động căn lại ảnh theo khung mới
+    if (this.bgImage && this.bgImage.width && this.bgImage.height) {
+      const scale = Math.max(width / this.bgImage.width, height / this.bgImage.height);
+      this.bgImage.set({
         scaleX: scale,
         scaleY: scale,
         originX: 'center',
         originY: 'center',
-        left: baseSize.width / 2,
-        top: baseSize.height / 2,
-        selectable: false,
-        evented: false,
-        name: 'bg_image'
+        left: width / 2,
+        top: height / 2
       });
+      this.bgImage.setCoords();
+    }
 
-      this.canvas.add(img);
-      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(img) : (this.canvas as any).sendToBack(img);
+    const containerEl = document.querySelector('.layout-workspace') as HTMLElement;
+    if (containerEl) {
+      this.updateCanvasDisplaySize(containerEl.clientWidth, containerEl.clientHeight);
+    } else {
       this.canvas.requestRenderAll();
-    });
+    }
   }
 
   toggleBackgroundEdit(): boolean {

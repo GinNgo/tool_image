@@ -32,6 +32,11 @@ import { TemplateService } from '../../services/template.service';
 
           <!-- Công cụ tùy chỉnh ảnh nền khi đã có ảnh -->
           <div class="bg-controls" *ngIf="editorState.backgroundImage()">
+            <div class="pixel-info" *ngIf="editorState.backgroundImageDimensions() as dims">
+              <span>Độ phân giải ảnh:</span>
+              <strong>{{ dims.width }} × {{ dims.height }} px</strong>
+            </div>
+
             <button
               class="btn w-full"
               [ngClass]="canvasService.isBgEditing ? 'btn-success' : 'btn-studio'"
@@ -42,11 +47,11 @@ import { TemplateService } from '../../services/template.service';
             </button>
 
             <div class="btn-group mt-2">
+              <button class="btn btn-studio flex-1 btn-sm" (click)="matchImageSize()" title="Điều chỉnh khung hình bằng đúng kích thước ảnh pixel gốc">
+                Khớp ảnh gốc
+              </button>
               <button class="btn btn-studio flex-1 btn-sm" (click)="canvasService.resetBackgroundFit('cover')" title="Phủ kín khung hình (Cover)">
                 Phủ kín
-              </button>
-              <button class="btn btn-studio flex-1 btn-sm" (click)="canvasService.resetBackgroundFit('contain')" title="Vừa vặn toàn bộ ảnh (Contain)">
-                Vừa vặn
               </button>
               <button class="btn btn-danger btn-sm" (click)="canvasService.removeBackgroundImage()" title="Gỡ bỏ ảnh nền">
                 Xóa
@@ -207,6 +212,19 @@ import { TemplateService } from '../../services/template.service';
       border-radius: var(--radius-md);
       border: 1px solid var(--color-dark-border);
     }
+    .pixel-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      background: #1e293b;
+      padding: 6px 10px;
+      border-radius: 4px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .pixel-info strong {
+      color: #38bdf8;
+    }
     .mt-2 {
       margin-top: 8px;
     }
@@ -308,6 +326,14 @@ export class SidebarDrawerComponent {
 
   toggleBgEdit(): void {
     this.canvasService.toggleBackgroundEdit();
+  }
+
+  matchImageSize(): void {
+    const dims = this.editorState.backgroundImageDimensions();
+    if (dims) {
+      this.canvasService.setCanvasDimensions(dims.width, dims.height);
+      this.canvasService.resetBackgroundFit('contain');
+    }
   }
 
   applyLayout(layout: any): void {
