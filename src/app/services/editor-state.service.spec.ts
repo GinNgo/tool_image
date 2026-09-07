@@ -140,7 +140,7 @@ describe('EditorStateService', () => {
         },
         {
           type: 'subtitle' as const,
-          label: 'Khẩu hiệu',
+          label: 'Thông điệp',
           content: 'KHẨU HIỆU KHUÔN',
           x: 540,
           y: 300,

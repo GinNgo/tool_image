@@ -15,7 +15,7 @@ describe('FontService', () => {
     const presets = service.getPresets();
     expect(presets.length).toBe(10);
     expect(presets[0].id).toBe('solemn');
-    expect(presets[0].name).toBe('Pano Trang trọng');
+    expect(presets[0].name).toBe('In hoa Trang trọng');
     expect(presets[0].fontFamily).toBe('Montserrat-Bold');
   });
 

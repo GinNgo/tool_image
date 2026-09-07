@@ -7,8 +7,8 @@ const CUSTOM_LAYOUTS_STORAGE_KEY = 'tool_image_custom_layout_masters';
 export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
   {
     id: 'layout_banner_bottom',
-    name: 'Khẩu hiệu dưới chân',
-    description: 'Tiêu đề lớn nổi bật kèm khẩu hiệu chân trang (Chuẩn áp phích tuyên truyền)',
+    name: 'Tiêu đề dưới chân',
+    description: 'Tiêu đề lớn nổi bật kèm thông điệp chân trang',
     category: 'banner',
     canvas: { width: 1080, height: 1350 },
     decorations: {
@@ -19,7 +19,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'title',
         label: 'Tiêu đề chính',
-        content: 'TIÊU ĐỀ TUYÊN TRUYỀN',
+        content: 'NHẬP TIÊU ĐỀ TẠI ĐÂY',
         x: 540,
         y: 1100,
         align: 'center',
@@ -40,8 +40,8 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       },
       {
         type: 'subtitle',
-        label: 'Khẩu hiệu hành động',
-        content: 'QUYẾT TÂM HOÀN THÀNH XUẤT SẮC MỌI NHIỆM VỤ ĐƯỢC GIAO',
+        label: 'Thông điệp hành động',
+        content: 'NHẬP NỘI DUNG PHỤ MÔ TẢ CHO BỨC ẢNH',
         x: 540,
         y: 1210,
         align: 'center',
@@ -72,7 +72,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'title',
         label: 'Tiêu đề đỉnh',
-        content: 'CHÀO MỪNG SỰ KIỆN TRỌNG ĐẠI',
+        content: 'THÔNG ĐIỆP SỰ KIỆN',
         x: 540,
         y: 180,
         align: 'center',
@@ -94,7 +94,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'subtitle',
         label: 'Thời gian & Địa điểm',
-        content: 'Hà Nội, Ngày 02 tháng 09 năm 2026',
+        content: 'Thời gian & Địa điểm',
         x: 540,
         y: 260,
         align: 'center',
@@ -123,7 +123,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'title',
         label: 'Thông điệp trung tâm',
-        content: 'THÔNG BÁO QUAN TRỌNG',
+        content: 'KHUYẾN MÃI ĐẶC BIỆT',
         x: 540,
         y: 640,
         align: 'center',
@@ -146,7 +146,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'subtitle',
         label: 'Ghi chú phụ',
-        content: 'Áp dụng cho toàn thể cán bộ, nhân viên và hội viên',
+        content: 'Áp dụng cho tất cả khách hàng thân thiết',
         x: 540,
         y: 730,
         align: 'center',
@@ -174,7 +174,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'title',
         label: 'Lời trích dẫn',
-        content: '"Không có gì quý hơn độc lập, tự do"',
+        content: '"Sáng tạo là thông minh và vui vẻ"',
         x: 540,
         y: 980,
         align: 'center',
@@ -196,7 +196,7 @@ export const DEFAULT_LAYOUT_MASTERS: LayoutMaster[] = [
       {
         type: 'caption',
         label: 'Tác giả / Nguồn',
-        content: '— CHỦ TỊCH HỒ CHÍ MINH —',
+        content: '— ALBERT EINSTEIN —',
         x: 540,
         y: 1070,
         align: 'center',
@@ -383,7 +383,7 @@ export class TemplateService {
    */
   layoutMasterToTemplate(master: LayoutMaster): Template {
     const firstBlock = master.blocks[0] || {
-      content: 'TIÊU ĐỀ TUYÊN TRUYỀN',
+      content: 'NHẬP TIÊU ĐỀ TẠI ĐÂY',
       x: master.canvas.width / 2,
       y: master.canvas.height * 0.85,
       align: 'center',

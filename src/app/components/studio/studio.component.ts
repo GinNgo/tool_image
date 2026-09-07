@@ -31,8 +31,8 @@ import { Template } from '../../models/template.model';
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
           </div>
           <div class="brand-meta">
-            <h1 class="brand-title">Banner Studio Pro</h1>
-            <span class="brand-subtitle">Trình tạo pano khẩu hiệu chuyên nghiệp</span>
+            <h1 class="brand-title">PhotoText Studio</h1>
+            <span class="brand-subtitle">Công cụ ghép chữ lên ảnh chuyên nghiệp</span>
           </div>
         </div>
 

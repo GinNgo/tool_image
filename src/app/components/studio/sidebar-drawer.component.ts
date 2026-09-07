@@ -89,7 +89,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
                   type="text"
                   class="layout-name-input"
                   [(ngModel)]="newLayoutName"
-                  placeholder="Tên mẫu khuôn (VD: Khẩu hiệu công ty)..."
+                  placeholder="Tên mẫu khuôn (VD: Bố cục sự kiện)..."
                 />
                 <div class="form-actions">
                   <button class="btn btn-sm btn-studio" (click)="cancelSaveLayout()" type="button">Hủy</button>
@@ -905,7 +905,7 @@ export class SidebarDrawerComponent {
   }
 
   onAddSubtitle(): void {
-    const newBlock = this.editorState.addCustomTextBlock('custom', 'Hộp chữ', 'Nhập tiêu đề hoặc khẩu hiệu...', 38);
+    const newBlock = this.editorState.addCustomTextBlock('custom', 'Hộp chữ', 'Nhập tiêu đề hoặc thông điệp...', 38);
     if (newBlock) {
       this.canvasService.renderTextBlock(newBlock);
       this.canvasService.selectTextBlock(newBlock.id);

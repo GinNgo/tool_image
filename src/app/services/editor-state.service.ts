@@ -182,7 +182,7 @@ export class EditorStateService {
   }
 
   addSubtitleBlock(): TextBlock | null {
-    return this.addCustomTextBlock('subtitle', 'Tiêu đề phụ', 'Nhập nội dung phụ / khẩu hiệu...', 36);
+    return this.addCustomTextBlock('subtitle', 'Tiêu đề phụ', 'Nhập nội dung phụ / thông điệp...', 36);
   }
 
   addCustomTextBlock(

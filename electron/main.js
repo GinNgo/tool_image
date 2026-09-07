@@ -10,7 +10,7 @@ function createWindow() {
     height: 920,
     minWidth: 960,
     minHeight: 700,
-    title: 'Công cụ tạo ảnh và tiêu đề tuyên truyền',
+    title: 'PhotoText Studio',
     icon: path.join(__dirname, '../public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

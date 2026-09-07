@@ -4,9 +4,9 @@ import { FontPreset } from '../models/template.model';
 export const CURATED_FONTS: FontPreset[] = [
   {
     id: 'solemn',
-    name: 'Pano Trang trọng',
+    name: 'In hoa Trang trọng',
     fontFamily: 'Montserrat-Bold',
-    description: 'Chữ in đậm, uy nghiêm, chuẩn phong cách pano khẩu hiệu chính quy',
+    description: 'Chữ in đậm, uy nghiêm, chuẩn phong cách thiết kế chuyên nghiệp',
     category: 'formal',
   },
   {
