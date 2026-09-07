@@ -22,12 +22,40 @@ import { TemplateService } from '../../services/template.service';
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <h3>Hình ảnh nền</h3>
           </div>
-          <p class="section-desc">Tải lên hình ảnh làm phông nền cho thiết kế của bạn.</p>
+          <p class="section-desc">Tải ảnh lên làm phông nền. Bạn có thể phóng to, thu nhỏ hoặc di chuyển tùy ý.</p>
+
           <label class="btn btn-accent file-upload-label w-full">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Tải ảnh lên
+            {{ editorState.backgroundImage() ? 'Đổi ảnh khác' : 'Tải ảnh lên' }}
             <input type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
           </label>
+
+          <!-- Công cụ tùy chỉnh ảnh nền khi đã có ảnh -->
+          <div class="bg-controls" *ngIf="editorState.backgroundImage()">
+            <button
+              class="btn w-full"
+              [ngClass]="canvasService.isBgEditing ? 'btn-success' : 'btn-studio'"
+              (click)="toggleBgEdit()"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+              {{ canvasService.isBgEditing ? 'Xong (Khóa ảnh nền)' : 'Chỉnh vị trí / Phóng to ảnh' }}
+            </button>
+
+            <div class="btn-group mt-2">
+              <button class="btn btn-studio flex-1 btn-sm" (click)="canvasService.resetBackgroundFit('cover')" title="Phủ kín khung hình (Cover)">
+                Phủ kín
+              </button>
+              <button class="btn btn-studio flex-1 btn-sm" (click)="canvasService.resetBackgroundFit('contain')" title="Vừa vặn toàn bộ ảnh (Contain)">
+                Vừa vặn
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="canvasService.removeBackgroundImage()" title="Gỡ bỏ ảnh nền">
+                Xóa
+              </button>
+            </div>
+            <p class="hint-text" *ngIf="canvasService.isBgEditing">
+              💡 Bạn có thể kéo chuột trên ảnh để di chuyển vị trí hoặc kéo 4 góc để phóng to/thu nhỏ mà <b>không làm giảm chất lượng ảnh pixel gốc</b>.
+            </p>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -169,9 +197,24 @@ import { TemplateService } from '../../services/template.service';
       display: flex;
       gap: 12px;
     }
-    .file-upload-label {
-      margin: 0;
-      width: 100%;
+    .bg-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-dark-border);
+    }
+    .mt-2 {
+      margin-top: 8px;
+    }
+    .hint-text {
+      font-size: 0.75rem;
+      color: #38bdf8;
+      line-height: 1.4;
+      margin: 4px 0 0 0;
     }
 
     /* Layout Grid */
@@ -244,7 +287,7 @@ import { TemplateService } from '../../services/template.service';
 export class SidebarDrawerComponent {
   constructor(
     private fileService: FileService,
-    private canvasService: CanvasService,
+    public canvasService: CanvasService,
     public editorState: EditorStateService,
     public templateService: TemplateService
   ) {}
@@ -261,6 +304,10 @@ export class SidebarDrawerComponent {
 
   onAddTextClick(): void {
     this.canvasService.addTextBox();
+  }
+
+  toggleBgEdit(): void {
+    this.canvasService.toggleBackgroundEdit();
   }
 
   applyLayout(layout: any): void {

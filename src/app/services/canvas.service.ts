@@ -181,35 +181,118 @@ export class CanvasService {
     this.canvas.requestRenderAll();
   }
 
-  setBackgroundImage(url: string, width: number, height: number): void {
+  private bgImage: fabric.Image | null = null;
+  public isBgEditing = false;
+
+  setBackgroundImage(url: string, width?: number, height?: number): void {
     if (!this.canvas) return;
 
-    // Keep current canvas size, don't shrink it to the image!
     const baseSize = this.editorState.canvasSize();
-
     this.editorState.setBackgroundImage(url);
 
+    // Remove existing background object if present
+    if (this.bgImage) {
+      this.canvas.remove(this.bgImage);
+      this.bgImage = null;
+    }
+    // Also clear canvas.backgroundImage just in case
+    this.canvas.backgroundImage = undefined;
+
     fabric.Image.fromURL(url).then((img) => {
-      if (this.canvas) {
-        // Calculate scale to COVER the canvas (like object-fit: cover)
-        const scaleX = baseSize.width / img.width!;
-        const scaleY = baseSize.height / img.height!;
-        const scale = Math.max(scaleX, scaleY);
+      if (!this.canvas) return;
 
-        img.scale(scale);
+      this.bgImage = img;
 
-        // Center the image
-        img.set({
-          originX: 'center',
-          originY: 'center',
-          left: baseSize.width / 2,
-          top: baseSize.height / 2
-        });
+      // Calculate scale to COVER the canvas (like object-fit: cover)
+      const scaleX = baseSize.width / img.width!;
+      const scaleY = baseSize.height / img.height!;
+      const scale = Math.max(scaleX, scaleY);
 
-        this.canvas.backgroundImage = img;
-        this.canvas.requestRenderAll();
-      }
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        originX: 'center',
+        originY: 'center',
+        left: baseSize.width / 2,
+        top: baseSize.height / 2,
+        selectable: false,
+        evented: false,
+        name: 'bg_image'
+      });
+
+      this.canvas.add(img);
+      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(img) : (this.canvas as any).sendToBack(img);
+      this.canvas.requestRenderAll();
     });
+  }
+
+  toggleBackgroundEdit(): boolean {
+    if (!this.canvas || !this.bgImage) return false;
+
+    this.isBgEditing = !this.isBgEditing;
+
+    if (this.isBgEditing) {
+      this.bgImage.set({
+        selectable: true,
+        evented: true,
+        hasControls: true,
+        hasBorders: true
+      });
+      this.canvas.setActiveObject(this.bgImage);
+    } else {
+      this.bgImage.set({
+        selectable: false,
+        evented: false,
+        hasControls: false,
+        hasBorders: false
+      });
+      this.canvas.discardActiveObject();
+      // Ensure it stays at back
+      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(this.bgImage) : (this.canvas as any).sendToBack(this.bgImage);
+    }
+
+    this.canvas.requestRenderAll();
+    return this.isBgEditing;
+  }
+
+  resetBackgroundFit(mode: 'cover' | 'contain' | 'center'): void {
+    if (!this.canvas || !this.bgImage) return;
+
+    const baseSize = this.editorState.canvasSize();
+    const imgWidth = this.bgImage.width || baseSize.width;
+    const imgHeight = this.bgImage.height || baseSize.height;
+
+    let scale = 1;
+    if (mode === 'cover') {
+      scale = Math.max(baseSize.width / imgWidth, baseSize.height / imgHeight);
+    } else if (mode === 'contain') {
+      scale = Math.min(baseSize.width / imgWidth, baseSize.height / imgHeight);
+    } else {
+      scale = this.bgImage.scaleX || 1;
+    }
+
+    this.bgImage.set({
+      scaleX: scale,
+      scaleY: scale,
+      originX: 'center',
+      originY: 'center',
+      left: baseSize.width / 2,
+      top: baseSize.height / 2
+    });
+
+    this.bgImage.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
+  removeBackgroundImage(): void {
+    if (!this.canvas) return;
+    if (this.bgImage) {
+      this.canvas.remove(this.bgImage);
+      this.bgImage = null;
+    }
+    this.canvas.backgroundImage = undefined;
+    this.editorState.setBackgroundImage(null);
+    this.canvas.requestRenderAll();
   }
 
   
