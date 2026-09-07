@@ -1,11 +1,9 @@
 import { Component } from '@angular/core';
-import { StudioComponent } from './components/studio/studio.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [StudioComponent],
-  template: `<app-studio />`,
+  template: `<h1>App Started</h1>`,
   styles: `
     :host {
       display: block;
@@ -16,4 +14,3 @@ import { StudioComponent } from './components/studio/studio.component';
   `,
 })
 export class App {}
-
