@@ -7,6 +7,7 @@ import {
   afterNextRender,
   effect,
   OnDestroy,
+  HostListener
 } from '@angular/core';
 import { TemplateService } from '../../services/template.service';
 import { EditorStateService } from '../../services/editor-state.service';
@@ -43,8 +44,25 @@ import { Template } from '../../models/template.model';
           </span>
         </div>
 
-        <!-- Right: Primary Actions (Export PNG) -->
+        <!-- Right: Primary Actions (Change Image, Save Draft, Export PNG) -->
         <div class="header-actions">
+          <button
+            class="btn btn-studio btn-sm change-img-btn"
+            (click)="headerFileInput.click()"
+            title="Chọn ảnh nền khác từ máy tính (Giữ nguyên vị trí và hiệu ứng các hộp chữ)"
+            type="button"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            {{ editorState.hasImage() ? 'Đổi ảnh nền' : 'Tải ảnh nền' }}
+          </button>
+          <input
+            #headerFileInput
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/bmp"
+            (change)="onFileInputChanged($event)"
+            style="display: none"
+          />
+
           <button
             class="btn btn-studio btn-sm"
             (click)="onSaveDraftClick()"
@@ -235,6 +253,16 @@ import { Template } from '../../models/template.model';
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .change-img-btn {
+      color: #93c5fd;
+      border-color: #3b82f6;
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.15);
+        color: #ffffff;
+      }
     }
 
     .export-btn {
@@ -482,15 +510,65 @@ export class StudioComponent implements OnDestroy {
     });
   }
 
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    // Không can thiệp nếu người dùng đang gõ trong ô input/textarea hoặc đang gõ chữ trên Fabric canvas
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT' || activeEl.classList.contains('canvas-artboard'))) {
+      if (!this.canvasService.isCanvasFocused()) return;
+    }
+
+    const block = this.editorState.activeBlock();
+    if (!block) return;
+
+    // Delete / Backspace -> Xóa hộp chữ
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !this.canvasService.isTextEditing()) {
+      if (block.removable) {
+        this.editorState.removeTextBlock(block.id);
+        this.canvasService.removeTextBlock(block.id);
+      }
+      return;
+    }
+
+    // Ctrl + D -> Nhân bản
+    if (event.ctrlKey && (event.key === 'd' || event.key === 'D')) {
+      event.preventDefault();
+      const newBlock = this.editorState.duplicateTextBlock(block.id);
+      if (newBlock) {
+        this.canvasService.renderTextBlock(newBlock);
+        this.canvasService.selectTextBlock(newBlock.id);
+      }
+      return;
+    }
+
+    // Arrow keys -> Di chuyển nhẹ (nudge)
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key) && !this.canvasService.isTextEditing()) {
+      event.preventDefault();
+      const nudge = event.shiftKey ? 10 : 2;
+      let newX = block.x;
+      let newY = block.y;
+
+      if (event.key === 'ArrowUp') newY -= nudge;
+      if (event.key === 'ArrowDown') newY += nudge;
+      if (event.key === 'ArrowLeft') newX -= nudge;
+      if (event.key === 'ArrowRight') newX += nudge;
+
+      this.editorState.updateBlockPosition(block.id, newX, newY);
+      const tb = this.canvasService.getTextbox(block.id);
+      if (tb) {
+        tb.set({ left: newX, top: newY });
+        tb.setCoords();
+        this.canvasService.requestRenderAll();
+      }
+    }
+  }
+
   private async initStudio(): Promise<void> {
     // If no template is selected yet, choose the first curated one
-    let template = this.editorState.selectedTemplate() || this.templateService.selectedTemplate();
-    if (!template) {
-      const all = this.templateService.templates();
-      template = all[0];
-      this.templateService.selectTemplate(template.templateId);
-      this.editorState.setTemplate(template);
-    }
+    this.ensureInitialTemplate();
+
+    const template = this.editorState.selectedTemplate() || this.templateService.selectedTemplate();
+    if (!template) return;
 
     const canvasEl = this.fabricCanvas().nativeElement;
     const blocks = this.editorState.textBlocks();
@@ -503,6 +581,20 @@ export class StudioComponent implements OnDestroy {
     const savedImg = this.editorState.userImageDataUrl();
     if (savedImg) {
       await this.canvasService.setBackgroundImage(savedImg);
+    }
+  }
+
+  ensureInitialTemplate(): void {
+    let template = this.editorState.selectedTemplate() || this.templateService.selectedTemplate();
+    if (!template) {
+      const all = this.templateService.templates();
+      template = all[0];
+      if (template) {
+        this.templateService.selectTemplate(template.templateId);
+        this.editorState.setTemplate(template);
+      }
+    } else if (!this.editorState.selectedTemplate()) {
+      this.editorState.setTemplate(template);
     }
   }
 

@@ -6,7 +6,7 @@ import { FileService } from '../../services/file.service';
 import { ImageService } from '../../services/image.service';
 import { FontService } from '../../services/font.service';
 import { CanvasService } from '../../services/canvas.service';
-import { Template } from '../../models/template.model';
+import { Template, LayoutMaster } from '../../models/template.model';
 
 type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
 
@@ -22,11 +22,11 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
           class="rail-btn"
           [class.active]="activeTab() === 'templates'"
           (click)="selectTab('templates')"
-          title="Mẫu thiết kế"
+          title="Mẫu khuôn bố cục PowerPoint"
           type="button"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <span class="rail-label">Mẫu</span>
+          <span class="rail-label">Khuôn mẫu</span>
         </button>
 
         <button
@@ -37,14 +37,14 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
           type="button"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-          <span class="rail-label">Chữ</span>
+          <span class="rail-label">Hộp chữ</span>
         </button>
 
         <button
           class="rail-btn"
           [class.active]="activeTab() === 'image'"
           (click)="selectTab('image')"
-          title="Ảnh nền"
+          title="Đổi ảnh nền giữ nguyên chữ"
           type="button"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -65,21 +65,85 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
 
       <!-- Expandable Drawer Panel -->
       <section class="drawer-panel">
-        <!-- 1. TEMPLATES TAB -->
+        <!-- 1. TEMPLATES / LAYOUT MASTERS TAB (PowerPoint Layouts) -->
         @if (activeTab() === 'templates') {
           <div class="panel-inner">
-            <h4 class="drawer-heading">Mẫu bố cục pano</h4>
+            <div class="drawer-header-row">
+              <h4 class="drawer-heading">Khuôn bố cục (PowerPoint)</h4>
+              <button
+                class="btn btn-sm btn-studio save-layout-btn"
+                (click)="openSaveLayoutDialog()"
+                title="Lưu vị trí và kiểu dáng chữ hiện tại thành mẫu khuôn mới"
+                type="button"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Lưu thành mẫu
+              </button>
+            </div>
+
+            <!-- Save Custom Layout Master inline form -->
+            @if (isSavingLayout()) {
+              <div class="custom-layout-form">
+                <span class="form-title">Lưu bố cục chữ hiện tại</span>
+                <input
+                  type="text"
+                  class="layout-name-input"
+                  [(ngModel)]="newLayoutName"
+                  placeholder="Tên mẫu khuôn (VD: Khẩu hiệu công ty)..."
+                />
+                <div class="form-actions">
+                  <button class="btn btn-sm btn-studio" (click)="cancelSaveLayout()" type="button">Hủy</button>
+                  <button class="btn btn-sm btn-primary" (click)="confirmSaveLayout()" type="button">Lưu mẫu</button>
+                </div>
+              </div>
+            }
+
+            <p class="drawer-subtext">
+              Nhấp chọn khuôn để sắp xếp vị trí các dòng chữ tức thì. Ảnh nền được <strong>giữ nguyên 100%</strong>.
+            </p>
+
             <div class="template-list">
-              @for (tpl of templateService.templates(); track tpl.templateId) {
+              @for (layout of templateService.layoutMasters(); track layout.id) {
                 <div
                   class="template-mini-card"
-                  [class.selected]="editorState.selectedTemplate()?.templateId === tpl.templateId"
-                  (click)="onSelectTemplate(tpl)"
+                  [class.selected]="templateService.selectedLayoutMaster()?.id === layout.id"
+                  (click)="onApplyLayoutMaster(layout)"
                 >
-                  <img class="tpl-thumb" [src]="tpl.thumbnail" [alt]="tpl.name" loading="lazy" />
+                  <div class="layout-preview-box">
+                    <div class="layout-mock-card" [class]="'cat-' + layout.category">
+                      @if (layout.category === 'banner') {
+                        <div class="mock-line mock-bottom-thick"></div>
+                        <div class="mock-line mock-bottom-thin"></div>
+                      } @else if (layout.category === 'standard') {
+                        <div class="mock-line mock-top-thick"></div>
+                        <div class="mock-line mock-top-thin"></div>
+                      } @else if (layout.category === 'quote') {
+                        <div class="mock-line mock-center-quote"></div>
+                        <div class="mock-line mock-center-author"></div>
+                      } @else if (layout.category === 'minimal') {
+                        <div class="mock-line mock-single-thick"></div>
+                      } @else {
+                        <div class="mock-custom-badge">Tùy chỉnh</div>
+                      }
+                    </div>
+                  </div>
+
                   <div class="tpl-info">
-                    <span class="tpl-name">{{ tpl.name }}</span>
-                    <span class="tpl-dim">{{ tpl.canvas.width }} × {{ tpl.canvas.height }}px</span>
+                    <div class="tpl-title-row">
+                      <span class="tpl-name">{{ layout.name }}</span>
+                      @if (layout.isCustom) {
+                        <button
+                          class="delete-custom-layout-btn"
+                          (click)="onDeleteCustomLayout(layout.id, $event)"
+                          title="Xóa mẫu khuôn tự tạo này"
+                          type="button"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                      }
+                    </div>
+                    <span class="tpl-dim">{{ layout.description }}</span>
+                    <span class="tpl-boxes-count">{{ layout.blocks.length }} hộp chữ</span>
                   </div>
                 </div>
               }
@@ -91,14 +155,14 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
         @if (activeTab() === 'text') {
           <div class="panel-inner">
             <div class="drawer-header-row">
-              <h4 class="drawer-heading">Lớp chữ</h4>
+              <h4 class="drawer-heading">Danh sách hộp chữ</h4>
               <button
                 class="btn btn-sm btn-studio add-text-btn"
                 (click)="onAddSubtitle()"
                 type="button"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Thêm chữ
+                + Thêm hộp chữ
               </button>
             </div>
 
@@ -116,7 +180,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
                       <button
                         class="delete-icon-btn"
                         (click)="onRemoveBlock(block.id, $event)"
-                        title="Xóa lớp chữ này"
+                        title="Xóa hộp chữ này"
                         type="button"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -127,7 +191,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
                   <textarea
                     class="block-textarea"
                     rows="2"
-                    placeholder="Nhập nội dung..."
+                    placeholder="Nhập nội dung chữ..."
                     [ngModel]="block.content"
                     (ngModelChange)="onBlockContentChange(block.id, $event)"
                     (click)="$event.stopPropagation()"
@@ -159,7 +223,11 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
         <!-- 3. BACKGROUND IMAGE TAB -->
         @if (activeTab() === 'image') {
           <div class="panel-inner">
-            <h4 class="drawer-heading">Ảnh nền tuyên truyền</h4>
+            <h4 class="drawer-heading">Ảnh nền & Thay đổi ảnh</h4>
+
+            <p class="drawer-subtext">
+              Bạn có thể chọn ảnh mới bất cứ lúc nào. Các hộp chữ, hiệu ứng và vị trí đã căn chỉnh sẽ <strong>được giữ nguyên vẹn</strong>.
+            </p>
 
             <div class="image-action-box">
               <button
@@ -168,7 +236,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
                 type="button"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                {{ editorState.hasImage() ? 'Thay đổi ảnh nền' : 'Tải ảnh từ máy tính' }}
+                {{ editorState.hasImage() ? 'Đổi ảnh nền khác (Giữ nguyên chữ)' : 'Tải ảnh từ máy tính' }}
               </button>
               <input
                 #drawerFileInput
@@ -181,7 +249,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
 
             @if (editorState.hasImage()) {
               <div class="current-image-preview">
-                <span class="preview-title">Ảnh đang dùng:</span>
+                <span class="preview-title">Ảnh đang áp dụng:</span>
                 <div class="image-card">
                   <img class="preview-thumbnail" [src]="editorState.userImageDataUrl()" alt="Ảnh nền" />
                   <span class="image-name">{{ editorState.userImageFileName() || 'anh-nen.png' }}</span>
@@ -189,7 +257,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
               </div>
             } @else {
               <div class="upload-tip">
-                <p>Bạn cũng có thể kéo thả trực tiếp file ảnh vào khung vẽ ở giữa màn hình.</p>
+                <p>Kéo thả trực tiếp file ảnh vào khung vẽ ở giữa màn hình hoặc bấm nút bên trên.</p>
               </div>
             }
           </div>
@@ -251,7 +319,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
   styles: `
     .studio-sidebar {
       display: flex;
-      width: 360px;
+      width: 380px;
       height: 100%;
       background: #0f172a;
       border-right: 1px solid #1e293b;
@@ -261,7 +329,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
 
     /* Narrow Rail */
     .sidebar-rail {
-      width: 68px;
+      width: 72px;
       height: 100%;
       background: #020617;
       border-right: 1px solid #1e293b;
@@ -278,7 +346,7 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 56px;
+      width: 60px;
       height: 56px;
       background: transparent;
       border: none;
@@ -328,10 +396,73 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
       margin: 0;
     }
 
+    .drawer-subtext {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin: -6px 0 0 0;
+
+      strong {
+        color: #60a5fa;
+      }
+    }
+
     .drawer-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .save-layout-btn {
+      font-size: 0.74rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: #1e293b;
+      color: #60a5fa;
+      border: 1px solid #3b82f6;
+
+      &:hover {
+        background: #2563eb;
+        color: #ffffff;
+      }
+    }
+
+    .custom-layout-form {
+      background: #1e293b;
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-title {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #93c5fd;
+    }
+
+    .layout-name-input {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      color: #f8fafc;
+      outline: none;
+
+      &:focus {
+        border-color: #3b82f6;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
     }
 
     .add-text-btn {
@@ -342,18 +473,18 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
       padding: 4px 8px;
     }
 
-    /* Template Cards */
+    /* Layout Master Cards */
     .template-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .template-mini-card {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px;
+      padding: 10px;
       background: #1e293b;
       border: 1px solid #334155;
       border-radius: 8px;
@@ -367,33 +498,142 @@ type DrawerTab = 'templates' | 'text' | 'image' | 'projects';
 
       &.selected {
         border-color: #2563eb;
-        background: rgba(37, 99, 235, 0.15);
+        background: rgba(37, 99, 235, 0.18);
       }
     }
 
-    .tpl-thumb {
-      width: 48px;
-      height: 60px;
-      object-fit: cover;
+    .layout-preview-box {
+      width: 52px;
+      height: 64px;
+      flex-shrink: 0;
+    }
+
+    .layout-mock-card {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+      border: 1px solid #334155;
       border-radius: 4px;
-      background: #020617;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+
+    .mock-line {
+      background: #60a5fa;
+      border-radius: 2px;
+      position: absolute;
+    }
+
+    .mock-bottom-thick {
+      bottom: 12px;
+      width: 80%;
+      height: 6px;
+      background: #ef4444;
+    }
+    .mock-bottom-thin {
+      bottom: 5px;
+      width: 60%;
+      height: 3px;
+      background: #fbbf24;
+    }
+
+    .mock-top-thick {
+      top: 6px;
+      width: 80%;
+      height: 6px;
+      background: #3b82f6;
+    }
+    .mock-top-thin {
+      top: 15px;
+      width: 50%;
+      height: 3px;
+      background: #cbd5e1;
+    }
+
+    .mock-center-quote {
+      top: 24px;
+      width: 75%;
+      height: 4px;
+      background: #10b981;
+    }
+    .mock-center-author {
+      top: 32px;
+      width: 45%;
+      height: 3px;
+      background: #94a3b8;
+    }
+
+    .mock-single-thick {
+      bottom: 16px;
+      width: 84%;
+      height: 8px;
+      background: #3b82f6;
+    }
+
+    .mock-custom-badge {
+      font-size: 0.55rem;
+      font-weight: 700;
+      color: #60a5fa;
+      text-align: center;
     }
 
     .tpl-info {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tpl-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .tpl-name {
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.84rem;
+      font-weight: 700;
       color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .delete-custom-layout-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.2);
+      }
     }
 
     .tpl-dim {
       font-size: 0.72rem;
       color: #94a3b8;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tpl-boxes-count {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #60a5fa;
     }
 
     /* Text Blocks Stack */
@@ -600,14 +840,57 @@ export class SidebarDrawerComponent {
   private readonly imageService = inject(ImageService);
   private readonly canvasService = inject(CanvasService);
 
-  readonly activeTab = signal<DrawerTab>('text');
+  readonly activeTab = signal<DrawerTab>('templates');
   readonly projectStatusMsg = signal('');
   readonly projectStatusSuccess = signal(false);
+
+  // Saving custom layout master
+  readonly isSavingLayout = signal(false);
+  newLayoutName = '';
 
   readonly templateChanged = output<Template>();
 
   selectTab(tab: DrawerTab): void {
     this.activeTab.set(tab);
+  }
+
+  onApplyLayoutMaster(layout: LayoutMaster): void {
+    this.templateService.selectLayoutMaster(layout.id);
+    const tpl = this.templateService.layoutMasterToTemplate(layout);
+    this.editorState.setTemplate(tpl);
+    this.editorState.applyLayoutMaster(layout, true);
+    this.canvasService.syncAllTextBlocks(this.editorState.textBlocks());
+    this.templateChanged.emit(tpl);
+  }
+
+  openSaveLayoutDialog(): void {
+    this.newLayoutName = `Bố cục của tôi ${new Date().toLocaleDateString('vi-VN')}`;
+    this.isSavingLayout.set(true);
+  }
+
+  cancelSaveLayout(): void {
+    this.isSavingLayout.set(false);
+  }
+
+  confirmSaveLayout(): void {
+    const blocks = this.editorState.textBlocks();
+    if (blocks.length === 0) return;
+
+    const template = this.editorState.selectedTemplate();
+    const canvasSize = template ? { width: template.canvas.width, height: template.canvas.height } : { width: 1080, height: 1350 };
+
+    this.templateService.saveCustomLayoutMaster(
+      this.newLayoutName,
+      `Bố cục gồm ${blocks.length} hộp chữ`,
+      blocks,
+      canvasSize
+    );
+    this.isSavingLayout.set(false);
+  }
+
+  onDeleteCustomLayout(id: string, event: Event): void {
+    event.stopPropagation();
+    this.templateService.deleteCustomLayoutMaster(id);
   }
 
   onSelectTemplate(tpl: Template): void {

@@ -89,6 +89,27 @@ Người dùng muốn lưu lại bố cục, ảnh và nội dung đang làm d�
 
 ---
 
+### User Story 5 - Mẫu khuôn bố cục chuẩn PowerPoint & Thay đổi ảnh nền linh hoạt (Priority: P1)
+
+Người dùng muốn loại bỏ các mẫu cố định tĩnh (cứng nhắc) và thay vào đó là hệ thống **Mẫu khuôn bố cục (Layout Masters / Frames)** tương tự PowerPoint:
+- Người dùng có thể chọn các khuôn bố cục có sẵn (Khẩu hiệu trên-dưới, Băng rôn tiêu đề giữa, Chữ ký sự kiện, Trích dẫn tuyên truyền...).
+- Khi người dùng tự tay căn chỉnh vị trí, phông chữ, hiệu ứng cho một bức ảnh ưng ý, họ có thể bấm **"Lưu thành khuôn mẫu mới"**.
+- Khi mở bất kỳ bức ảnh mới nào (hoặc đổi ảnh nền khác), toàn bộ hệ thống hộp chữ, vị trí, kích cỡ, màu sắc, hiệu ứng đã căn chỉnh vẫn được **giữ nguyên 100%**, người dùng chỉ việc thay ảnh nền hoặc sửa lại nội dung chữ một cách cực kỳ nhanh chóng.
+
+**Why this priority**: Giải quyết triệt để yêu cầu cốt lõi của người dùng: *"máy cái mẫu bỏ đi bạn mẫu là mẫu khuông có sẵn như kiểu của ppt mà sau khi mình thục hiện chỉnh và luu tấm hình đàu mở lên và thay đổi"*.
+
+**Independent Test**:
+- Tải ảnh 1 lên, tạo 2 hộp chữ và căn vị trí đẹp mắt -> Bấm "Lưu thành khuôn mẫu".
+- Chọn đổi sang Ảnh 2 có kích thước/tỷ lệ khác -> Các hộp chữ giữ nguyên vị trí tỷ lệ tương đối và hiệu ứng chữ đẹp.
+- Áp dụng một khuôn bố cục khác từ danh sách -> Các hộp chữ sắp xếp theo bố cục mới ngay lập tức.
+
+**Acceptance Scenarios**:
+1. **Given** người dùng đã thêm và căn chỉnh các hộp chữ trên canvas, **When** bấm "Lưu thành khuôn mẫu", **Then** hệ thống lưu cấu trúc hộp chữ (vị trí, cỡ chữ, font, hiệu ứng) vào danh mục Mẫu khuôn để dùng lại nhiều lần.
+2. **Given** một bố cục đang hiển thị trên canvas, **When** người dùng bấm "Đổi ảnh nền" và chọn một bức ảnh khác từ máy tính, **Then** ảnh nền mới được cập nhật vừa vặn khung vẽ, trong khi toàn bộ các hộp chữ giữ nguyên vị trí và thuộc tính.
+3. **Given** người dùng mở danh mục Mẫu khuôn, **When** click chọn một mẫu khuôn (ví dụ "Khẩu hiệu dưới chân", "Tiêu đề trang trọng trên đỉnh", "Bố cục đối xứng"), **Then** các hộp chữ trên ảnh hiện tại tự động chuyển dịch và định dạng theo khuôn mẫu đã chọn mà không làm mất ảnh nền.
+
+---
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements

@@ -74,20 +74,35 @@
 
 **Independent Test**: Tạo ảnh + 2 khối chữ -> Bấm "Lưu dự án" -> Tắt ứng dụng -> Mở lại -> Bấm "Mở dự án cũ" -> Toàn bộ ảnh nền và vị trí chữ được phục hồi chính xác.
 
-- [ ] T017 [US4] Cập nhật `electron/main.js` và `electron/preload.js`: bổ sung IPC handler `show-save-project-dialog`, `show-open-project-dialog`, `write-project-file`, `read-project-file`
-- [ ] T018 [US4] Bổ sung các phương thức `saveProject()` và `loadProject()` trong `src/app/services/file.service.ts` (hỗ trợ cả Electron IPC và Browser fallback)
-- [ ] T019 [US4] Tích hợp cơ chế tự động ghi nhớ (Auto-save) vào `localStorage` trong `EditorStateService`
-- [ ] T020 [US4] Thêm nút "📂 Mở dự án cũ" tại `StepTemplateComponent` (`src/app/components/step-template/step-template.component.ts`) và nút "💾 Lưu bản thảo" tại `StepEditorComponent`
-- [ ] T021 [P] [US4] Viết test kiểm tra serialize và deserialize `ProjectData` trong `src/app/services/file.service.spec.ts`
+- [x] T017 [US4] Cập nhật `electron/main.js` và `electron/preload.js`: bổ sung IPC handler `show-save-project-dialog`, `show-open-project-dialog`, `write-project-file`, `read-project-file`
+- [x] T018 [US4] Bổ sung các phương thức `saveProject()` và `loadProject()` trong `src/app/services/file.service.ts` (hỗ trợ cả Electron IPC và Browser fallback)
+- [x] T019 [US4] Tích hợp cơ chế tự động ghi nhớ (Auto-save) vào `localStorage` trong `EditorStateService`
+- [x] T020 [US4] Thêm nút "📂 Mở dự án cũ" và nút "💾 Lưu bản thảo" trong Studio Workspace
+- [x] T021 [P] [US4] Viết test kiểm tra serialize và deserialize `ProjectData` trong `src/app/services/file.service.spec.ts`
 
 **Checkpoint US4**: Hoàn thiện toàn diện tính năng lưu/mở lại cấu hình cũ theo yêu cầu người dùng.
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: User Story 5 - Mẫu khuôn bố cục PowerPoint & Đổi ảnh giữ nguyên chữ (Priority: P1)
 
-**Purpose**: Đảm bảo xuất ảnh chất lượng cao và giao diện hoàn hảo không lỗi.
+**Goal**: Bỏ các mẫu tĩnh `tpl_01..03`, xây dựng thư viện Mẫu khuôn bố cục (Layout Masters), hỗ trợ lưu khuôn mẫu người dùng và thay đổi ảnh nền linh hoạt mà vẫn giữ nguyên vị trí/kiểu dáng các hộp chữ.
 
-- [ ] T022 Cập nhật `StepExportComponent` trong `src/app/components/step-export/step-export.component.ts` để hiển thị ảnh xem trước sắc nét với đầy đủ các khối chữ
-- [ ] T023 Chạy toàn bộ test suite `npx ng test --watch=false` và kiểm tra 100% passed
-- [ ] T024 Chạy build production `npm run build` và kiểm tra ứng dụng chạy ổn định
+**Independent Test**: Áp dụng khuôn bố cục "Tiêu đề & Khẩu hiệu chân trang" -> Đổi ảnh nền mới -> Các hộp chữ giữ nguyên vị trí, kiểu dáng và tự động tương phản -> Bấm "Lưu thành khuôn mẫu" -> Khuôn mới xuất hiện trong danh sách mẫu cá nhân.
+
+- [x] T022 [US5] Mở rộng mô hình `LayoutFrame` và `LayoutMasterPreset` trong `src/app/models/template.model.ts`
+- [x] T023 [US5] Nâng cấp `TemplateService` (`src/app/services/template.service.ts`): Cung cấp các mẫu khuôn bố cục chuẩn PPT (Chân trang, Đỉnh trang, Băng rôn giữa, Đối xứng hai bên), hỗ trợ lưu và nạp mẫu khuôn tùy biến người dùng qua localStorage
+- [x] T024 [US5] Nâng cấp `EditorStateService` (`src/app/services/editor-state.service.ts`): Thêm phương thức `applyLayoutMaster()` và `saveCurrentAsLayoutMaster()`
+- [x] T025 [US5] Thiết kế lại tab Mẫu trong `SidebarDrawerComponent` (`src/app/components/studio/sidebar-drawer.component.ts`): Hiển thị danh mục khuôn bố cục trực quan với thumbnail vector, nút "Lưu khuôn mẫu hiện tại", và nút chuyển nhanh mẫu khuôn
+- [x] T026 [US5] Bổ sung nút "Đổi ảnh nền" trực quan 1-chạm trên thanh Header / Canvas stage để người dùng đổi ảnh liên tục mà không cần tạo lại chữ
+- [x] T027 [P] [US5] Cập nhật Unit Tests cho `TemplateService` và `EditorStateService` với tính năng Layout Masters
+
+---
+
+## Phase 7: Polish & Verification Loop
+
+**Purpose**: Đảm bảo xuất ảnh chất lượng cao và giao diện hoàn hảo không lỗi qua vòng lặp kiểm thử liên tục.
+
+- [x] T028 Chạy toàn bộ test suite `npx ng test --watch=false` và kiểm tra 100% passed
+- [x] T029 Chạy build production `npm run build` và kiểm tra ứng dụng chạy ổn định
+- [x] T030 Đánh giá chất lượng trải nghiệm giao diện và đóng gói hoàn thiện

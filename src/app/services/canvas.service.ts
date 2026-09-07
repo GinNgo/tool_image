@@ -290,12 +290,54 @@ export class CanvasService {
     this.canvas?.renderAll();
   }
 
+  isCanvasFocused(): boolean {
+    return this.canvas !== null;
+  }
+
+  isTextEditing(): boolean {
+    if (!this.canvas) return false;
+    const activeObj = this.canvas.getActiveObject();
+    if (activeObj && activeObj.type === 'textbox') {
+      return (activeObj as Textbox).isEditing;
+    }
+    return false;
+  }
+
+  requestRenderAll(): void {
+    this.canvas?.requestRenderAll();
+  }
+
   removeTextBlock(id: string): void {
     const tb = this.textboxes.get(id);
     if (tb && this.canvas) {
       this.canvas.remove(tb);
       this.textboxes.delete(id);
       this.canvas.renderAll();
+    }
+  }
+
+  /**
+   * Đồng bộ lại toàn bộ các khối chữ lên Canvas (ví dụ khi đổi Mẫu khuôn bố cục PPT)
+   */
+  syncAllTextBlocks(blocks: TextBlock[]): void {
+    if (!this.canvas) return;
+
+    // Remove textboxes not present in blocks
+    const newIds = new Set(blocks.map((b) => b.id));
+    this.textboxes.forEach((tb, id) => {
+      if (!newIds.has(id)) {
+        this.canvas?.remove(tb);
+        this.textboxes.delete(id);
+      }
+    });
+
+    // Render or update each block
+    blocks.forEach((block) => {
+      this.updateTextBlock(block);
+    });
+
+    if (blocks.length > 0) {
+      this.selectTextBlock(blocks[0].id);
     }
   }
 

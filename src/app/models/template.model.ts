@@ -83,6 +83,20 @@ export interface FontPreset {
   category: 'formal' | 'impact' | 'modern' | 'classic' | 'dynamic' | 'friendly';
 }
 
+// === PowerPoint-style Layout Master / Template Frame ===
+
+export interface LayoutMaster {
+  id: string;
+  name: string;
+  description: string;
+  category: 'standard' | 'banner' | 'quote' | 'minimal' | 'custom';
+  isCustom?: boolean;
+  thumbnailSvg?: string;
+  canvas: CanvasSize;
+  decorations?: DecorationConfig;
+  blocks: Omit<TextBlock, 'id'>[];
+}
+
 export interface ProjectData {
   version: '2.0';
   projectName: string;

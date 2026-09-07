@@ -109,4 +109,62 @@ describe('EditorStateService', () => {
     expect(service.hasImage()).toBe(true);
     expect(service.currentStep()).toBe(2);
   });
+
+  it('should apply layout master without losing existing user text', () => {
+    service.setTemplate(mockTemplate);
+    service.setText('Nội dung người dùng đã nhập');
+
+    const mockLayoutMaster = {
+      id: 'test_master',
+      name: 'Khuôn 2 dòng',
+      description: 'Test layout',
+      category: 'banner' as const,
+      canvas: { width: 1080, height: 1350 },
+      blocks: [
+        {
+          type: 'title' as const,
+          label: 'Tiêu đề chính',
+          content: 'TIÊU ĐỀ KHUÔN',
+          x: 540,
+          y: 200,
+          align: 'center' as const,
+          fontFamily: 'Montserrat-Bold',
+          fontSize: 60,
+          minFontSize: 20,
+          maxFontSize: 80,
+          colorMode: 'custom' as const,
+          color: '#ffffff',
+          strokeColor: '#000000',
+          strokeWidth: 4,
+          removable: false,
+        },
+        {
+          type: 'subtitle' as const,
+          label: 'Khẩu hiệu',
+          content: 'KHẨU HIỆU KHUÔN',
+          x: 540,
+          y: 300,
+          align: 'center' as const,
+          fontFamily: 'BeVietnamPro',
+          fontSize: 32,
+          minFontSize: 16,
+          maxFontSize: 40,
+          colorMode: 'custom' as const,
+          color: '#ffeb3b',
+          strokeColor: '#000000',
+          strokeWidth: 2,
+          removable: true,
+        },
+      ],
+    };
+
+    service.applyLayoutMaster(mockLayoutMaster, true);
+    expect(service.textBlocks().length).toBe(2);
+    // User's text was preserved in the first block
+    expect(service.textBlocks()[0].content).toBe('Nội dung người dùng đã nhập');
+    expect(service.textBlocks()[0].y).toBe(200);
+    // Second block gets the layout master text
+    expect(service.textBlocks()[1].content).toBe('KHẨU HIỆU KHUÔN');
+    expect(service.textBlocks()[1].y).toBe(300);
+  });
 });

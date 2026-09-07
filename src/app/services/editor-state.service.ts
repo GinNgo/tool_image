@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Template, WizardStep, TextBlock, ProjectData } from '../models/template.model';
+import { Template, WizardStep, TextBlock, ProjectData, LayoutMaster } from '../models/template.model';
 
 const STORAGE_KEY = 'tool_image_last_project';
 
@@ -71,6 +71,47 @@ export class EditorStateService {
       this.activeBlockId.set('title');
       this.exportedDataUrl.set(null);
     }
+  }
+
+  /**
+   * Áp dụng một Mẫu khuôn bố cục PowerPoint (Layout Master):
+   * Giữ nguyên ảnh nền đang có (nếu có), chỉ áp dụng vị trí, kiểu dáng và cấu trúc các hộp chữ
+   */
+  applyLayoutMaster(master: LayoutMaster, keepExistingText: boolean = true): void {
+    const curTemplate = this.selectedTemplate();
+    const cw = curTemplate?.canvas.width || master.canvas.width;
+    const ch = curTemplate?.canvas.height || master.canvas.height;
+
+    // Scaling ratio if current canvas aspect ratio changed due to uploaded image
+    const scaleX = cw / master.canvas.width;
+    const scaleY = ch / master.canvas.height;
+
+    const existingBlocks = this.textBlocks();
+
+    const newBlocks: TextBlock[] = master.blocks.map((b, index) => {
+      const existing = existingBlocks[index];
+      // If keepExistingText and user already typed content, keep user's content
+      const content = keepExistingText && existing && existing.content.trim() ? existing.content : b.content;
+
+      const newId = existing ? existing.id : `box_${Date.now()}_${index}`;
+      const posX = Math.round(b.x * scaleX);
+      const posY = Math.round(b.y * scaleY);
+
+      return {
+        ...b,
+        id: newId,
+        content,
+        x: posX,
+        y: posY,
+        defaultX: posX,
+        defaultY: posY,
+      };
+    });
+
+    this.textBlocks.set(newBlocks);
+    this.activeBlockId.set(newBlocks.length > 0 ? newBlocks[0].id : null);
+    this.exportedDataUrl.set(null);
+    this.autoSaveToLocalStorage();
   }
 
   setImage(dataUrl: string, fileName: string): void {
@@ -182,6 +223,29 @@ export class EditorStateService {
       removable: true,
       defaultX: cw / 2,
       defaultY,
+    };
+
+    this.textBlocks.update((blocks) => [...blocks, newBlock]);
+    this.activeBlockId.set(newId);
+    this.exportedDataUrl.set(null);
+    this.autoSaveToLocalStorage();
+    return newBlock;
+  }
+
+  duplicateTextBlock(id: string): TextBlock | null {
+    const target = this.textBlocks().find((b) => b.id === id);
+    if (!target) return null;
+
+    const newId = `box_${Date.now()}_copy`;
+    const newBlock: TextBlock = {
+      ...target,
+      id: newId,
+      label: `${target.label} (Bản sao)`,
+      x: target.x + 40,
+      y: target.y + 40,
+      defaultX: (target.defaultX || target.x) + 40,
+      defaultY: (target.defaultY || target.y) + 40,
+      removable: true,
     };
 
     this.textBlocks.update((blocks) => [...blocks, newBlock]);

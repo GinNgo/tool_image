@@ -39,6 +39,7 @@ describe('StudioComponent', () => {
   });
 
   it('should initialize with default template and title block', () => {
+    component.ensureInitialTemplate();
     expect(editorState.selectedTemplate()).toBeTruthy();
     expect(editorState.textBlocks().length).toBeGreaterThanOrEqual(1);
   });

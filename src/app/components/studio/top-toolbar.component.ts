@@ -177,26 +177,25 @@ import { TextEffectType } from '../../models/template.model';
 
         <div class="toolbar-divider"></div>
 
+        <!-- Preset WordArt Styles -->
+        <div class="toolbar-group">
+          <span class="group-label">Mẫu nhanh:</span>
+          <button class="tool-btn action-text-btn style-btn yellow-red" (click)="applyQuickStyle('yellow-red')" title="Chữ vàng viền đỏ (Băng rôn)">Vàng</button>
+          <button class="tool-btn action-text-btn style-btn white-3d" (click)="applyQuickStyle('white-3d')" title="Chữ trắng bóng 3D">Trắng 3D</button>
+          <button class="tool-btn action-text-btn style-btn ribbon-red" (click)="applyQuickStyle('ribbon-red')" title="Băng rôn đỏ chữ vàng">Băng rôn</button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
         <!-- Position Controls & Reset -->
         <div class="toolbar-group ml-auto">
-          <button
-            class="tool-btn action-text-btn"
-            (click)="centerHorizontally()"
-            title="Gióng chữ vào chính giữa chiều ngang ảnh"
-            type="button"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="3"/><line x1="20" y1="21" x2="20" y2="3"/><line x1="14" y1="12" x2="10" y2="12"/></svg>
-            Gióng giữa
+          <button class="tool-btn action-text-btn" (click)="onDuplicateBlock()" title="Nhân bản hộp chữ (Ctrl+D)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Nhân bản
           </button>
-
-          <button
-            class="tool-btn action-text-btn"
-            (click)="resetPosition()"
-            title="Khôi phục vị trí mặc định"
-            type="button"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Vị trí mẫu
+          <button class="tool-btn action-text-btn text-red-400 hover-bg-red" (click)="onDeleteBlock()" title="Xóa hộp chữ (Delete)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Xóa
           </button>
         </div>
       } @else {
@@ -452,6 +451,36 @@ import { TextEffectType } from '../../models/template.model';
         color: #60a5fa;
       }
     }
+
+    .style-btn {
+      font-weight: 700 !important;
+      border: 1px solid #334155 !important;
+    }
+
+    .style-btn.yellow-red {
+      color: #fbbf24 !important;
+      text-shadow: -1px -1px 0 #ef4444, 1px -1px 0 #ef4444, -1px 1px 0 #ef4444, 1px 1px 0 #ef4444;
+    }
+
+    .style-btn.white-3d {
+      color: #ffffff !important;
+      text-shadow: 1px 1px 0 #000, 2px 2px 0 #000;
+    }
+
+    .style-btn.ribbon-red {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+      border-color: #ef4444 !important;
+    }
+
+    .text-red-400 {
+      color: #f87171 !important;
+    }
+
+    .hover-bg-red:hover {
+      background: #7f1d1d !important;
+      color: #fca5a5 !important;
+    }
   `,
 })
 export class TopToolbarComponent {
@@ -572,5 +601,48 @@ export class TopToolbarComponent {
     if (updated) {
       this.canvasService.updateTextBlock(updated);
     }
+  }
+
+  onDuplicateBlock(): void {
+    const block = this.activeBlock();
+    if (!block) return;
+    const newBlock = this.editorState.duplicateTextBlock(block.id);
+    if (newBlock) {
+      this.canvasService.renderTextBlock(newBlock);
+      this.canvasService.selectTextBlock(newBlock.id);
+    }
+  }
+
+  onDeleteBlock(): void {
+    const block = this.activeBlock();
+    if (!block || !block.removable) return;
+    this.editorState.removeTextBlock(block.id);
+    this.canvasService.removeTextBlock(block.id);
+  }
+
+  applyQuickStyle(style: 'yellow-red' | 'white-3d' | 'ribbon-red'): void {
+    const block = this.activeBlock();
+    if (!block) return;
+
+    let updates: any = { bold: true };
+    if (style === 'yellow-red') {
+      updates.colorMode = 'custom';
+      updates.color = '#fbbf24'; // amber-400
+      updates.effect = 'stroke';
+      updates.strokeColor = '#ef4444'; // red-500
+    } else if (style === 'white-3d') {
+      updates.colorMode = 'custom';
+      updates.color = '#ffffff';
+      updates.effect = 'deep-shadow';
+      updates.shadowColor = '#000000';
+    } else if (style === 'ribbon-red') {
+      updates.colorMode = 'custom';
+      updates.color = '#ffffff';
+      updates.effect = 'background';
+      updates.strokeColor = '#ef4444'; // background color for ribbon
+    }
+
+    this.editorState.updateBlockFormat(block.id, updates);
+    this.syncBlockToCanvas(block.id, updates);
   }
 }
