@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FileService } from '../../services/file.service';
 import { CanvasService } from '../../services/canvas.service';
 import { EditorStateService } from '../../services/editor-state.service';
+import { TemplateService } from '../../services/template.service';
 
 @Component({
   selector: 'app-sidebar-drawer',
@@ -14,98 +15,195 @@ import { EditorStateService } from '../../services/editor-state.service';
         <h2>Công Cụ</h2>
       </div>
 
-      <div class="action-group">
-        <label class="btn btn-primary file-upload-label">
-          📁 Tải ảnh nền
-          <input type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
-        </label>
+      <div class="sidebar-content">
+        <!-- 1. Cấu hình Nền -->
+        <div class="tool-section">
+          <h3>Ảnh Nền</h3>
+          <label class="btn btn-primary file-upload-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Tải ảnh nền
+            <input type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+          </label>
+        </div>
 
-        <button class="btn btn-secondary" (click)="onAddTextClick()">
-          ➕ Thêm hộp chữ
+        <!-- 2. Cấu hình Chữ -->
+        <div class="tool-section">
+          <h3>Hộp Chữ</h3>
+          <button class="btn btn-secondary w-full" (click)="onAddTextClick()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            Thêm hộp chữ tự do
+          </button>
+        </div>
+
+        <!-- 3. Mẫu Khuôn Bố Cục -->
+        <div class="tool-section">
+          <h3>Khuôn Bố Cục Nhanh</h3>
+          <p class="section-desc">Nhấp chọn để sắp xếp các dòng chữ tự động. Ảnh nền vẫn được giữ nguyên.</p>
+
+          <div class="layout-grid">
+            <div *ngFor="let layout of templateService.layoutMasters()" class="layout-card" (click)="applyLayout(layout)">
+              <div class="layout-preview">
+                 <div class="layout-mock" [ngClass]="layout.category"></div>
+              </div>
+              <span class="layout-name">{{ layout.name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Dự án & Lưu trữ -->
+        <div class="tool-section mt-auto">
+          <h3>Dự án</h3>
+          <div class="btn-group">
+            <label class="btn btn-secondary file-upload-label flex-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Mở .json
+              <input type="file" (change)="onOpenProject($event)" accept=".json" style="display: none;" />
+            </label>
+            <button class="btn btn-secondary flex-1" (click)="onSaveProject()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Lưu .json
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-success export-btn" (click)="onExportClick()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Xuất ảnh PNG sắc nét
         </button>
-
-        
-        <label class="btn btn-secondary file-upload-label">
-          📂 Mở dự án (.json)
-          <input type="file" (change)="onOpenProject($event)" accept=".json" style="display: none;" />
-        </label>
-
-        <button class="btn btn-secondary" (click)="onSaveProject()">
-          💾 Lưu dự án (.json)
-        </button>
-
-        <button class="btn btn-success" (click)="onExportClick()">
-          💾 Xuất ảnh PNG
-        </button>
-      </div>
-
-      <div class="info-box" *ngIf="editorState.backgroundImage()">
-        <p>Ảnh nền: {{ editorState.canvasSize().width }} x {{ editorState.canvasSize().height }} px</p>
       </div>
     </aside>
   `,
   styles: [`
     .sidebar {
-      width: 250px;
+      width: 280px;
       height: 100%;
-      background: #1e293b;
-      color: #f8fafc;
-      padding: 20px;
+      background: var(--color-panel-surface);
+      color: var(--color-text-light);
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      border-right: 1px solid var(--color-dark-border);
+    }
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--color-dark-border);
     }
     .sidebar-header h2 {
       margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .action-group {
+    .sidebar-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .tool-section {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-    .btn {
-      padding: 10px 16px;
-      border-radius: 6px;
-      border: none;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      transition: background 0.2s;
-    }
-    .btn-primary {
-      background: #3b82f6;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #2563eb;
-    }
-    .btn-secondary {
-      background: #475569;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #334155;
-    }
-    .btn-success {
-      background: #10b981;
-      color: white;
-    }
-    .btn-success:hover {
-      background: #059669;
-    }
-    .info-box {
-      margin-top: auto;
-      background: #0f172a;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
+    .tool-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
       color: #94a3b8;
+      margin: 0;
+    }
+    .section-desc {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 0 0 8px 0;
+      line-height: 1.4;
+    }
+    .w-full {
+      width: 100%;
+    }
+    .flex-1 {
+      flex: 1;
+    }
+    .mt-auto {
+      margin-top: auto;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .file-upload-label {
+      margin: 0;
+      width: 100%;
+    }
+
+    /* Layout Grid */
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .layout-card {
+      background: var(--color-bg);
+      border: 1px solid var(--color-dark-border);
+      border-radius: var(--radius-md);
+      padding: 8px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .layout-card:hover {
+      border-color: var(--color-primary);
+      background: #1e293b;
+    }
+    .layout-name {
+      font-size: 0.75rem;
+      text-align: center;
+      color: #cbd5e1;
+      line-height: 1.2;
+    }
+
+    /* Mocks for layout types */
+    .layout-preview {
+      width: 100%;
+      aspect-ratio: 4/5;
+      background: #334155;
+      border-radius: 4px;
+      position: relative;
+    }
+    .layout-mock {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+    }
+    .layout-mock.header {
+      top: 15%;
+      height: 15%;
+      background: #38bdf8;
+      border-radius: 2px;
+    }
+    .layout-mock.banner {
+      bottom: 10%;
+      height: 25%;
+      background: #fbbf24;
+      border-radius: 2px;
+    }
+    .layout-mock.quote {
+      top: 40%;
+      height: 20%;
+      background: #a78bfa;
+      border-radius: 2px;
+    }
+
+    .export-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      margin-top: 8px;
     }
   `]
 })
@@ -113,7 +211,8 @@ export class SidebarDrawerComponent {
   constructor(
     private fileService: FileService,
     private canvasService: CanvasService,
-    public editorState: EditorStateService
+    public editorState: EditorStateService,
+    public templateService: TemplateService
   ) {}
 
   async onFileSelected(event: Event): Promise<void> {
@@ -130,11 +229,21 @@ export class SidebarDrawerComponent {
     this.canvasService.addTextBox();
   }
 
-  
+  applyLayout(layout: any): void {
+    // Clear existing objects
+    this.canvasService.clearCanvasText();
+
+    // Add layout blocks
+    layout.blocks.forEach((block: any) => {
+      this.canvasService.addConfiguredTextBox(block);
+    });
+  }
+
   onSaveProject(): void {
     const canvasData = this.canvasService.getCanvasObjectsJson();
     const project = {
-      version: '1.0',
+      version: '2.0',
+      title: this.editorState.projectTitle(),
       canvasSize: this.editorState.canvasSize(),
       backgroundImage: this.editorState.backgroundImage(),
       canvasData
@@ -149,15 +258,23 @@ export class SidebarDrawerComponent {
     if (input.files && input.files[0]) {
       const text = await input.files[0].text();
       const project = JSON.parse(text);
-      
+
+      if (project.title) {
+        this.editorState.updateProjectTitle(project.title);
+      }
+
+      if (project.canvasSize) {
+        this.editorState.canvasSize.set(project.canvasSize);
+      }
+
       if (project.backgroundImage) {
         this.canvasService.setBackgroundImage(
-          project.backgroundImage, 
-          project.canvasSize.width, 
+          project.backgroundImage,
+          project.canvasSize.width,
           project.canvasSize.height
         );
       }
-      
+
       if (project.canvasData) {
         await this.canvasService.loadCanvasObjectsJson(project.canvasData);
       }
@@ -167,7 +284,7 @@ export class SidebarDrawerComponent {
   onExportClick(): void {
     const dataUrl = this.canvasService.exportToPng();
     if (dataUrl) {
-      this.fileService.downloadFile(dataUrl, 'thiet-ke-anh.png');
+      this.fileService.downloadFile(dataUrl, 'anh-xuat.png');
     }
   }
 }

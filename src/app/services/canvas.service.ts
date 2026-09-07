@@ -17,11 +17,21 @@ export class CanvasService {
 
   initializeCanvas(canvasElement: HTMLCanvasElement, containerElement: HTMLElement): void {
     this.ngZone.runOutsideAngular(() => {
+      const baseSize = this.editorState.canvasSize();
       this.canvas = new fabric.Canvas(canvasElement, {
+        width: baseSize.width,
+        height: baseSize.height,
         preserveObjectStacking: true,
         selection: true,
         backgroundColor: '#f1f5f9'
       });
+
+      // Trigger initial resize immediately
+      setTimeout(() => {
+        if (containerElement) {
+          this.updateCanvasDisplaySize(containerElement.clientWidth, containerElement.clientHeight);
+        }
+      }, 50);
 
       this.setupResponsiveScaling(containerElement);
       this.setupEvents();
@@ -49,13 +59,13 @@ export class CanvasService {
     const scaleX = containerWidth / baseSize.width;
     const scaleY = containerHeight / baseSize.height;
 
-    // Add 40px padding
+    // Add 40px padding (so 0.9 or 0.95)
     const zoom = Math.min(scaleX, scaleY) * 0.95;
 
     this.canvas.setDimensions({
       width: baseSize.width,
       height: baseSize.height
-    }, { cssOnly: false });
+    });
 
     this.canvas.setZoom(zoom);
 
@@ -63,11 +73,26 @@ export class CanvasService {
     const visualWidth = baseSize.width * zoom;
     const visualHeight = baseSize.height * zoom;
 
-    const canvasEl = this.canvas.getElement();
-    if (canvasEl) {
-      canvasEl.style.width = `${visualWidth}px`;
-      canvasEl.style.height = `${visualHeight}px`;
+    // In Fabric v7+, setDimensions({ cssOnly: true }) might be missing or different,
+    // so we manually apply the CSS styles to all relevant layers:
+    const canvasContainer = (this.canvas as any).wrapperEl || document.querySelector('.canvas-container');
+    const lowerCanvas = document.querySelector('.lower-canvas') as HTMLCanvasElement;
+    const upperCanvas = document.querySelector('.upper-canvas') as HTMLCanvasElement;
+
+    if (canvasContainer) {
+      (canvasContainer as HTMLElement).style.width = `${visualWidth}px`;
+      (canvasContainer as HTMLElement).style.height = `${visualHeight}px`;
     }
+    if (lowerCanvas) {
+      lowerCanvas.style.width = `${visualWidth}px`;
+      lowerCanvas.style.height = `${visualHeight}px`;
+    }
+    if (upperCanvas) {
+      upperCanvas.style.width = `${visualWidth}px`;
+      upperCanvas.style.height = `${visualHeight}px`;
+    }
+
+    this.canvas.requestRenderAll();
   }
 
   private setupEvents(): void {
@@ -271,6 +296,63 @@ export class CanvasService {
   getCanvasObjectsJson(): any {
     if (!this.canvas) return null;
     return this.canvas.toJSON();
+  }
+
+  clearCanvasText(): void {
+    if (!this.canvas) return;
+    const objects = this.canvas.getObjects();
+    const textObjects = objects.filter(obj => obj.type === 'textbox');
+    textObjects.forEach(obj => this.canvas?.remove(obj));
+    this.canvas.requestRenderAll();
+  }
+
+  addConfiguredTextBox(block: any): void {
+    if (!this.canvas) return;
+    const textbox = new fabric.Textbox(block.text, {
+      left: block.x,
+      top: block.y,
+      originX: 'center',
+      originY: 'center',
+      width: block.width,
+      fontSize: block.fontSize,
+      fontFamily: block.fontFamily,
+      fill: block.color,
+      textAlign: block.textAlign,
+      fontWeight: block.bold ? 'bold' : 'normal',
+      fontStyle: block.italic ? 'italic' : 'normal',
+      name: `tb_${Date.now()}_${Math.random()}`,
+      lockScalingY: true,
+      splitByGrapheme: true
+    });
+
+    if (block.effect === 'shadow' || block.effect === 'deep-shadow') {
+      textbox.set('shadow', new fabric.Shadow({
+        color: block.shadowColor || 'rgba(0,0,0,0.5)',
+        blur: block.shadowBlur || 4,
+        offsetX: block.shadowOffsetX || 2,
+        offsetY: block.shadowOffsetY || 2
+      }));
+    }
+
+    if (block.effect === 'stroke' || block.effect === 'deep-shadow') {
+      textbox.set({
+        stroke: block.strokeColor || '#000000',
+        strokeWidth: block.strokeWidth || 2,
+        paintFirst: 'stroke'
+      });
+    }
+
+    if (block.effect === 'background') {
+      textbox.set('backgroundColor', block.backgroundColor || 'rgba(0,0,0,0.5)');
+    }
+
+    textbox.setControlsVisibility({
+      mt: false,
+      mb: false
+    });
+
+    this.canvas.add(textbox);
+    this.canvas.requestRenderAll();
   }
 
   loadCanvasObjectsJson(json: any): Promise<void> {

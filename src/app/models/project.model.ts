@@ -1,13 +1,4 @@
-export interface Project {
-  id: string;
-  title: string;
-  canvasWidth: number;
-  canvasHeight: number;
-  backgroundImage: string | null;
-  textBlocks: TextBlock[];
-  createdAt: string;
-  updatedAt: string;
-}
+export type TextEffect = 'none' | 'shadow' | 'deep-shadow' | 'stroke' | 'glow' | 'background';
 
 export interface TextBlock {
   id: string;
@@ -21,17 +12,44 @@ export interface TextBlock {
   textAlign: 'left' | 'center' | 'right';
   bold: boolean;
   italic: boolean;
-  strokeColor?: string | null;
+  uppercase?: boolean;
+  letterSpacing?: number;
+  lineHeight?: number;
+  effect?: TextEffect;
+  strokeColor?: string;
   strokeWidth?: number;
-  shadowColor?: string | null;
+  shadowColor?: string;
   shadowBlur?: number;
   shadowOffsetX?: number;
   shadowOffsetY?: number;
+  backgroundColor?: string;
+}
+
+export interface LayoutMaster {
+  id: string;
+  name: string;
+  description: string;
+  category: 'header' | 'banner' | 'quote' | 'minimal';
+  canvasWidth: number;
+  canvasHeight: number;
+  blocks: Omit<TextBlock, 'id'>[];
 }
 
 export interface FontDefinition {
   name: string;
   fontFamily: string;
-  category: 'Sans-serif' | 'Serif' | 'Handwriting' | 'Display';
+  category: 'formal' | 'impact' | 'modern' | 'classic' | 'friendly' | 'handwriting';
+  description: string;
   isVietnameseSupported: boolean;
+}
+
+export interface Project {
+  version: '2.0';
+  title: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  backgroundImage: string | null;
+  textBlocks: TextBlock[];
+  createdAt: string;
+  updatedAt: string;
 }
