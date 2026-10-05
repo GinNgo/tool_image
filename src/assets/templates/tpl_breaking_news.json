@@ -1,0 +1,99 @@
+{
+  "id": "tpl_breaking_news",
+  "name": "Tin Nổi Bật & Thông Báo Báo Chí",
+  "category": "announcement",
+  "thumbnail": "📢",
+  "description": "Bố cục tiêu điểm thông tin báo chí với thanh ribbon nhãn TIN MỚI màu đỏ rực rỡ.",
+  "recommendedAspectRatios": ["16:9", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "bottom-to-top",
+    "color": "#000000",
+    "opacity": 75,
+    "heightRatio": 0.5
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.2,
+      "relativeY": 0.65,
+      "relativeWidth": 0.25,
+      "textConfig": {
+        "text": "TIN NÓNG 24H",
+        "typography": {
+          "fontFamily": "Oswald",
+          "fontSize": 28,
+          "fontWeight": "700",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#FFFFFF"
+        },
+        "ribbon": {
+          "enabled": true,
+          "backgroundColor": "#EF4444",
+          "opacity": 100,
+          "paddingX": 16,
+          "paddingY": 6,
+          "borderRadius": 4
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": false,
+          "color": "rgba(0,0,0,0)",
+          "blur": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.78,
+      "relativeWidth": 0.85,
+      "textConfig": {
+        "text": "TIÊU ĐỀ BẢN TIN QUAN TRỌNG TRONG NGÀY",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 48,
+          "fontWeight": "800",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "left",
+          "lineHeight": 1.2,
+          "letterSpacing": 1,
+          "color": "#FFFFFF"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.9)",
+          "blur": 8,
+          "offsetX": 2,
+          "offsetY": 3
+        }
+      }
+    }
+  ]
+}

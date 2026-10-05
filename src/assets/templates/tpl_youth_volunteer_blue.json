@@ -1,0 +1,99 @@
+{
+  "id": "tpl_youth_volunteer_blue",
+  "name": "Sự kiện Đoàn Thanh Niên Năng Động",
+  "category": "event",
+  "thumbnail": "⚡",
+  "description": "Màu xanh dương tươi trẻ, phù hợp chiến dịch tình nguyện, hội thao thanh niên và phong trào tuổi trẻ.",
+  "recommendedAspectRatios": ["16:9", "1:1", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "bottom-to-top",
+    "color": "#0F172A",
+    "opacity": 50,
+    "heightRatio": 0.5
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.74,
+      "relativeWidth": 0.8,
+      "textConfig": {
+        "text": "CHIẾN DỊCH TÌNH NGUYỆN HÈ 2026",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 52,
+          "fontWeight": "800",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#FFFFFF"
+        },
+        "ribbon": {
+          "enabled": true,
+          "backgroundColor": "#1D4ED8",
+          "opacity": 92,
+          "paddingX": 22,
+          "paddingY": 10,
+          "borderRadius": 8
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.5)",
+          "blur": 8,
+          "offsetX": 2,
+          "offsetY": 3
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.85,
+      "relativeWidth": 0.7,
+      "textConfig": {
+        "text": "TUỔI TRẺ TIÊN PHONG - BẢN LĨNH - SÁNG TẠO",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 28,
+          "fontWeight": "700",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 1.5,
+          "color": "#93C5FD"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.7)",
+          "blur": 6,
+          "offsetX": 1,
+          "offsetY": 2
+        }
+      }
+    }
+  ]
+}

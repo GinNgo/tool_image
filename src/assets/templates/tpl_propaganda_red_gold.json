@@ -1,0 +1,99 @@
+{
+  "id": "tpl_propaganda_red_gold",
+  "name": "Khẩu hiệu Cổ động Đỏ - Vàng",
+  "category": "propaganda",
+  "thumbnail": "🚩",
+  "description": "Phong cách cổ động truyền thống, chữ vàng viền nổi bật trên nền băng rôn đỏ cờ.",
+  "recommendedAspectRatios": ["16:9", "4:5", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "bottom-to-top",
+    "color": "#7F1D1D",
+    "opacity": 55,
+    "heightRatio": 0.55
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.72,
+      "relativeWidth": 0.85,
+      "textConfig": {
+        "text": "NHIỆT LIỆT CHÀO MỪNG ĐẠI HỘI ĐẢNG BỘ",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 56,
+          "fontWeight": "800",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#FFD700"
+        },
+        "ribbon": {
+          "enabled": true,
+          "backgroundColor": "#DC2626",
+          "opacity": 95,
+          "paddingX": 24,
+          "paddingY": 12,
+          "borderRadius": 8
+        },
+        "stroke": {
+          "enabled": true,
+          "color": "#7F1D1D",
+          "width": 2
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.6)",
+          "blur": 10,
+          "offsetX": 2,
+          "offsetY": 4
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.84,
+      "relativeWidth": 0.75,
+      "textConfig": {
+        "text": "ĐOÀN KẾT - DÂN CHỦ - KỶ CƯƠNG - SÁNG TẠO - PHÁT TRIỂN",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 30,
+          "fontWeight": "700",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 1,
+          "color": "#FFFFFF"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.8)",
+          "blur": 8,
+          "offsetX": 1,
+          "offsetY": 2
+        }
+      }
+    }
+  ]
+}

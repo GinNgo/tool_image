@@ -130,6 +130,7 @@
 - US5 (T025-T026) depends on US4
 
 ## Parallel execution examples
+
 - T007 (Sidebar UI) and T008 (FileService) can be built simultaneously
 - T014 (FontService) can be implemented independently before attaching to UI
 - T022 (Project state serialization logic) can be built while UI is being refined

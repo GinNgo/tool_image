@@ -1,10 +1,10 @@
 import { Injectable, NgZone } from '@angular/core';
 import * as fabric from 'fabric';
-import { TextBlock } from '../models/project.model';
+import { TextBlock, LayerInfo } from '../models/project.model';
 import { EditorStateService } from './editor-state.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CanvasService {
   private canvas: fabric.Canvas | null = null;
@@ -12,7 +12,7 @@ export class CanvasService {
 
   constructor(
     private editorState: EditorStateService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
   ) {}
 
   initializeCanvas(canvasElement: HTMLCanvasElement, containerElement: HTMLElement): void {
@@ -23,7 +23,7 @@ export class CanvasService {
         height: baseSize.height,
         preserveObjectStacking: true,
         selection: true,
-        backgroundColor: '#f1f5f9'
+        backgroundColor: '#f1f5f9',
       });
 
       // Trigger initial resize immediately
@@ -64,7 +64,7 @@ export class CanvasService {
 
     this.canvas.setDimensions({
       width: baseSize.width,
-      height: baseSize.height
+      height: baseSize.height,
     });
 
     this.canvas.setZoom(zoom);
@@ -75,7 +75,8 @@ export class CanvasService {
 
     // In Fabric v7+, setDimensions({ cssOnly: true }) might be missing or different,
     // so we manually apply the CSS styles to all relevant layers:
-    const canvasContainer = (this.canvas as any).wrapperEl || document.querySelector('.canvas-container');
+    const canvasContainer =
+      (this.canvas as any).wrapperEl || document.querySelector('.canvas-container');
     const lowerCanvas = document.querySelector('.lower-canvas') as HTMLCanvasElement;
     const upperCanvas = document.querySelector('.upper-canvas') as HTMLCanvasElement;
 
@@ -98,20 +99,30 @@ export class CanvasService {
   private setupEvents(): void {
     if (!this.canvas) return;
 
-    this.canvas.on('selection:created', (e) => this.handleSelection(e.selected));
-    this.canvas.on('selection:updated', (e) => this.handleSelection(e.selected));
+    this.canvas.on('selection:created', (e) => {
+      this.handleSelection(e.selected);
+      this.refreshLayers();
+    });
+    this.canvas.on('selection:updated', (e) => {
+      this.handleSelection(e.selected);
+      this.refreshLayers();
+    });
     this.canvas.on('selection:cleared', () => {
       this.ngZone.run(() => {
         this.editorState.setActiveTextBlock(null);
       });
+      this.refreshLayers();
     });
 
     this.canvas.on('object:modified', (e) => {
-      // Sync coordinates / text after modification
       if (e.target && e.target.type === 'textbox') {
         this.handleSelection([e.target]);
       }
+      this.refreshLayers();
     });
+
+    this.canvas.on('object:added', () => this.refreshLayers());
+    this.canvas.on('object:removed', () => this.refreshLayers());
   }
 
   private handleSelection(selected: fabric.Object[] | undefined): void {
@@ -132,9 +143,16 @@ export class CanvasService {
       fontFamily: obj.fontFamily || 'Arial',
       fontSize: obj.fontSize || 40,
       color: (obj.fill as string) || '#000000',
+      backgroundColor: (obj.backgroundColor as string) || '',
       textAlign: (obj.textAlign as 'left' | 'center' | 'right') || 'left',
       bold: obj.fontWeight === 'bold',
-      italic: obj.fontStyle === 'italic'
+      italic: obj.fontStyle === 'italic',
+      layerName: (obj as any).layerName || '',
+      visible: obj.visible !== false,
+      locked: !(obj.selectable !== false),
+      opacity: obj.opacity ?? 1,
+      letterSpacing: (obj as any).charSpacing || 0,
+      lineHeight: obj.lineHeight || 1.2,
     };
 
     this.ngZone.run(() => {
@@ -147,6 +165,7 @@ export class CanvasService {
 
     const baseSize = this.editorState.canvasSize();
 
+    const tbName = `tb_${Date.now()}`;
     const textbox = new fabric.Textbox(text, {
       left: baseSize.width / 2,
       top: baseSize.height / 2,
@@ -158,7 +177,7 @@ export class CanvasService {
       fill: '#ffffff',
       textAlign: 'center',
       fontWeight: 'bold',
-      name: `tb_${Date.now()}`,
+      name: tbName,
       // Enable PowerPoint-like word wrap resizing (only scale width, not stretching text)
       lockScalingY: true,
       splitByGrapheme: true,
@@ -166,14 +185,15 @@ export class CanvasService {
         color: 'rgba(0,0,0,0.5)',
         blur: 4,
         offsetX: 2,
-        offsetY: 2
-      })
+        offsetY: 2,
+      }),
     });
+    (textbox as any).layerName = `Văn bản ${this.getTextBoxCount() + 1}`;
 
     // Remove middle-top and middle-bottom handles to force width-only resizing
     textbox.setControlsVisibility({
       mt: false,
-      mb: false
+      mb: false,
     });
 
     this.canvas.add(textbox);
@@ -184,7 +204,12 @@ export class CanvasService {
   private bgImage: fabric.Image | null = null;
   public isBgEditing = false;
 
-  setBackgroundImage(url: string, width?: number, height?: number, fitMode: 'match-image' | 'cover' = 'match-image'): void {
+  setBackgroundImage(
+    url: string,
+    width?: number,
+    height?: number,
+    fitMode: 'match-image' | 'cover' = 'match-image',
+  ): void {
     if (!this.canvas) return;
 
     fabric.Image.fromURL(url).then((img) => {
@@ -197,8 +222,8 @@ export class CanvasService {
       if (this.bgImage) {
         this.canvas.remove(this.bgImage);
       }
-      const existingBgs = this.canvas.getObjects().filter(o => (o as any).name === 'bg_image');
-      existingBgs.forEach(bg => this.canvas?.remove(bg));
+      const existingBgs = this.canvas.getObjects().filter((o) => (o as any).name === 'bg_image');
+      existingBgs.forEach((bg) => this.canvas?.remove(bg));
 
       this.bgImage = null;
       this.canvas.backgroundImage = undefined;
@@ -218,7 +243,7 @@ export class CanvasService {
           top: 0,
           selectable: false,
           evented: false,
-          name: 'bg_image'
+          name: 'bg_image',
         });
       } else {
         // Giữ kích thước Canvas hiện tại và scale ảnh phủ kín
@@ -235,12 +260,14 @@ export class CanvasService {
           top: baseSize.height / 2,
           selectable: false,
           evented: false,
-          name: 'bg_image'
+          name: 'bg_image',
         });
       }
 
       this.canvas.add(img);
-      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(img) : (this.canvas as any).sendToBack(img);
+      (this.canvas as any).sendObjectToBack
+        ? (this.canvas as any).sendObjectToBack(img)
+        : (this.canvas as any).sendToBack(img);
 
       // Cập nhật lại zoom hiển thị để vừa vặn hoàn hảo trong màn hình làm việc
       const containerEl = document.querySelector('.layout-workspace') as HTMLElement;
@@ -267,7 +294,7 @@ export class CanvasService {
         originX: 'center',
         originY: 'center',
         left: width / 2,
-        top: height / 2
+        top: height / 2,
       });
       this.bgImage.setCoords();
     }
@@ -290,7 +317,7 @@ export class CanvasService {
         selectable: true,
         evented: true,
         hasControls: true,
-        hasBorders: true
+        hasBorders: true,
       });
       this.canvas.setActiveObject(this.bgImage);
     } else {
@@ -298,11 +325,13 @@ export class CanvasService {
         selectable: false,
         evented: false,
         hasControls: false,
-        hasBorders: false
+        hasBorders: false,
       });
       this.canvas.discardActiveObject();
       // Ensure it stays at back
-      (this.canvas as any).sendObjectToBack ? (this.canvas as any).sendObjectToBack(this.bgImage) : (this.canvas as any).sendToBack(this.bgImage);
+      (this.canvas as any).sendObjectToBack
+        ? (this.canvas as any).sendObjectToBack(this.bgImage)
+        : (this.canvas as any).sendToBack(this.bgImage);
     }
 
     this.canvas.requestRenderAll();
@@ -331,7 +360,7 @@ export class CanvasService {
       originX: 'center',
       originY: 'center',
       left: baseSize.width / 2,
-      top: baseSize.height / 2
+      top: baseSize.height / 2,
     });
 
     this.bgImage.setCoords();
@@ -344,8 +373,8 @@ export class CanvasService {
     if (this.bgImage) {
       this.canvas.remove(this.bgImage);
     }
-    const existingBgs = this.canvas.getObjects().filter(o => (o as any).name === 'bg_image');
-    existingBgs.forEach(bg => this.canvas?.remove(bg));
+    const existingBgs = this.canvas.getObjects().filter((o) => (o as any).name === 'bg_image');
+    existingBgs.forEach((bg) => this.canvas?.remove(bg));
 
     this.bgImage = null;
     this.canvas.backgroundImage = undefined;
@@ -353,7 +382,6 @@ export class CanvasService {
     this.canvas.requestRenderAll();
   }
 
-  
   updateActiveTextFormat(prop: string, value: any): void {
     if (!this.canvas) return;
 
@@ -363,15 +391,33 @@ export class CanvasService {
     if (prop === 'fontFamily') activeObj.set('fontFamily', value);
     if (prop === 'fontSize') activeObj.set('fontSize', Number(value));
     if (prop === 'color') activeObj.set('fill', value);
+    if (prop === 'backgroundColor') activeObj.set('backgroundColor', value);
     if (prop === 'textAlign') activeObj.set('textAlign', value);
     if (prop === 'bold') activeObj.set('fontWeight', value ? 'bold' : 'normal');
     if (prop === 'italic') activeObj.set('fontStyle', value ? 'italic' : 'normal');
+    if (prop === 'letterSpacing') activeObj.set('charSpacing', Number(value));
+    if (prop === 'lineHeight') activeObj.set('lineHeight', Number(value));
+    if (prop === 'opacity') activeObj.set('opacity', Number(value));
 
     this.canvas.requestRenderAll();
     this.handleSelection([activeObj]);
   }
 
-  
+  toggleTextBackground(color: string = 'rgba(220, 38, 38, 0.95)'): void {
+    if (!this.canvas) return;
+    const activeObj = this.canvas.getActiveObject() as fabric.Textbox;
+    if (!activeObj || activeObj.type !== 'textbox') return;
+
+    if (activeObj.backgroundColor) {
+      activeObj.set('backgroundColor', '');
+    } else {
+      activeObj.set('backgroundColor', color);
+    }
+
+    this.canvas.requestRenderAll();
+    this.handleSelection([activeObj]);
+  }
+
   toggleShadow(): void {
     if (!this.canvas) return;
     const activeObj = this.canvas.getActiveObject() as fabric.Textbox;
@@ -380,12 +426,15 @@ export class CanvasService {
     if (activeObj.shadow) {
       activeObj.set('shadow', null);
     } else {
-      activeObj.set('shadow', new fabric.Shadow({
-        color: 'rgba(0,0,0,0.8)',
-        blur: 6,
-        offsetX: 3,
-        offsetY: 3
-      }));
+      activeObj.set(
+        'shadow',
+        new fabric.Shadow({
+          color: 'rgba(0,0,0,0.8)',
+          blur: 6,
+          offsetX: 3,
+          offsetY: 3,
+        }),
+      );
     }
     this.canvas.requestRenderAll();
   }
@@ -401,13 +450,12 @@ export class CanvasService {
       activeObj.set({
         stroke: '#000000',
         strokeWidth: 2,
-        paintFirst: 'stroke'
+        paintFirst: 'stroke',
       });
     }
     this.canvas.requestRenderAll();
   }
 
-  
   isEditingText(): boolean {
     if (!this.canvas) return false;
     const activeObj = this.canvas.getActiveObject() as fabric.Textbox;
@@ -430,19 +478,26 @@ export class CanvasService {
     if (!activeObj) return;
 
     switch (direction) {
-      case 'up': activeObj.top = (activeObj.top || 0) - amount; break;
-      case 'down': activeObj.top = (activeObj.top || 0) + amount; break;
-      case 'left': activeObj.left = (activeObj.left || 0) - amount; break;
-      case 'right': activeObj.left = (activeObj.left || 0) + amount; break;
+      case 'up':
+        activeObj.top = (activeObj.top || 0) - amount;
+        break;
+      case 'down':
+        activeObj.top = (activeObj.top || 0) + amount;
+        break;
+      case 'left':
+        activeObj.left = (activeObj.left || 0) - amount;
+        break;
+      case 'right':
+        activeObj.left = (activeObj.left || 0) + amount;
+        break;
     }
-    
+
     activeObj.setCoords();
     this.canvas.requestRenderAll();
     // Fire modified to update state
     this.canvas.fire('object:modified', { target: activeObj });
   }
 
-  
   getCanvasObjectsJson(): any {
     if (!this.canvas) return null;
     return this.canvas.toJSON();
@@ -451,8 +506,8 @@ export class CanvasService {
   clearCanvasText(): void {
     if (!this.canvas) return;
     const objects = this.canvas.getObjects();
-    const textObjects = objects.filter(obj => obj.type === 'textbox');
-    textObjects.forEach(obj => this.canvas?.remove(obj));
+    const textObjects = objects.filter((obj) => obj.type === 'textbox');
+    textObjects.forEach((obj) => this.canvas?.remove(obj));
     this.canvas.requestRenderAll();
   }
 
@@ -472,23 +527,27 @@ export class CanvasService {
       fontStyle: block.italic ? 'italic' : 'normal',
       name: `tb_${Date.now()}_${Math.random()}`,
       lockScalingY: true,
-      splitByGrapheme: true
+      splitByGrapheme: true,
     });
+    (textbox as any).layerName = block.layerName || `Văn bản ${this.getTextBoxCount() + 1}`;
 
     if (block.effect === 'shadow' || block.effect === 'deep-shadow') {
-      textbox.set('shadow', new fabric.Shadow({
-        color: block.shadowColor || 'rgba(0,0,0,0.5)',
-        blur: block.shadowBlur || 4,
-        offsetX: block.shadowOffsetX || 2,
-        offsetY: block.shadowOffsetY || 2
-      }));
+      textbox.set(
+        'shadow',
+        new fabric.Shadow({
+          color: block.shadowColor || 'rgba(0,0,0,0.5)',
+          blur: block.shadowBlur || 4,
+          offsetX: block.shadowOffsetX || 2,
+          offsetY: block.shadowOffsetY || 2,
+        }),
+      );
     }
 
     if (block.effect === 'stroke' || block.effect === 'deep-shadow') {
       textbox.set({
         stroke: block.strokeColor || '#000000',
         strokeWidth: block.strokeWidth || 2,
-        paintFirst: 'stroke'
+        paintFirst: 'stroke',
       });
     }
 
@@ -496,9 +555,13 @@ export class CanvasService {
       textbox.set('backgroundColor', block.backgroundColor || 'rgba(0,0,0,0.5)');
     }
 
+    if (block.opacity !== undefined) {
+      textbox.set('opacity', block.opacity);
+    }
+
     textbox.setControlsVisibility({
       mt: false,
-      mb: false
+      mb: false,
     });
 
     this.canvas.add(textbox);
@@ -510,16 +573,19 @@ export class CanvasService {
       if (!this.canvas) return resolve();
       this.canvas.loadFromJSON(json, () => {
         // Re-bind this.bgImage if one was saved with name === 'bg_image'
-        const foundBg = this.canvas?.getObjects().find(o => (o as any).name === 'bg_image') as fabric.Image;
+        const foundBg = this.canvas
+          ?.getObjects()
+          .find((o) => (o as any).name === 'bg_image') as fabric.Image;
         if (foundBg) {
           this.bgImage = foundBg;
           // Ensure it cannot be selected directly unless edit mode is enabled
           foundBg.set({
             selectable: false,
-            evented: false
+            evented: false,
           });
         }
         this.canvas?.requestRenderAll();
+        this.refreshLayers();
         resolve();
       });
     });
@@ -535,8 +601,180 @@ export class CanvasService {
     return this.canvas.toDataURL({
       format: 'png',
       quality: 1,
-      multiplier: 1 // High res based on original canvas dims
+      multiplier: 1, // High res based on original canvas dims
     });
+  }
+
+  // ── Layer Management ──────────────────────────────────────────────
+
+  private getTextBoxCount(): number {
+    if (!this.canvas) return 0;
+    return this.canvas.getObjects().filter((o) => o.type === 'textbox').length;
+  }
+
+  refreshLayers(): void {
+    if (!this.canvas) return;
+    const activeObj = this.canvas.getActiveObject();
+    const objects = this.canvas.getObjects();
+    const layers: LayerInfo[] = [];
+
+    // Build layer list in reverse order (top layer first)
+    for (let i = objects.length - 1; i >= 0; i--) {
+      const obj = objects[i];
+      const objName = (obj as any).name || '';
+
+      if (obj.type === 'textbox') {
+        const tb = obj as fabric.Textbox;
+        layers.push({
+          id: objName,
+          name: (obj as any).layerName || objName,
+          type: 'text',
+          visible: obj.visible !== false,
+          locked: obj.selectable === false,
+          isActive: obj === activeObj,
+          opacity: obj.opacity ?? 1,
+          preview: (tb.text || '').substring(0, 30) || '(Trống)',
+        });
+      } else if (objName === 'bg_image') {
+        layers.push({
+          id: 'bg_image',
+          name: 'Ảnh nền',
+          type: 'background',
+          visible: obj.visible !== false,
+          locked: true,
+          isActive: false,
+          opacity: obj.opacity ?? 1,
+          preview: '[Ảnh nền]',
+        });
+      }
+    }
+
+    this.ngZone.run(() => {
+      this.editorState.updateLayers(layers);
+    });
+  }
+
+  setLayerVisibility(objectId: string, visible: boolean): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj) return;
+
+    obj.set('visible', visible);
+    if (!visible) {
+      // Deselect if hidden
+      if (this.canvas.getActiveObject() === obj) {
+        this.canvas.discardActiveObject();
+      }
+    }
+    this.canvas.requestRenderAll();
+    this.refreshLayers();
+  }
+
+  setLayerLock(objectId: string, locked: boolean): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj || (obj as any).name === 'bg_image') return;
+
+    obj.set({
+      selectable: !locked,
+      evented: !locked,
+      hasControls: !locked,
+      hasBorders: !locked,
+    });
+
+    if (locked && this.canvas.getActiveObject() === obj) {
+      this.canvas.discardActiveObject();
+    }
+
+    this.canvas.requestRenderAll();
+    this.refreshLayers();
+  }
+
+  reorderLayers(objectId: string, direction: 'up' | 'down'): void {
+    if (!this.canvas) return;
+    const objects = this.canvas.getObjects();
+    const idx = objects.findIndex((o) => (o as any).name === objectId);
+    if (idx === -1) return;
+
+    const obj = objects[idx];
+
+    if (direction === 'up' && idx < objects.length - 1) {
+      // Move forward (visually up = higher z-index)
+      const nextObj = objects[idx + 1];
+      // Don't swap past background
+      if ((nextObj as any).name === 'bg_image') return;
+      this.canvas.moveObjectTo(obj, idx + 1);
+    } else if (direction === 'down' && idx > 0) {
+      // Move backward (visually down = lower z-index)
+      const prevObj = objects[idx - 1];
+      if ((prevObj as any).name === 'bg_image') return;
+      this.canvas.moveObjectTo(obj, idx - 1);
+    }
+
+    this.canvas.requestRenderAll();
+    this.refreshLayers();
+  }
+
+  renameLayer(objectId: string, name: string): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj) return;
+
+    (obj as any).layerName = name;
+    this.refreshLayers();
+  }
+
+  setLayerOpacity(objectId: string, opacity: number): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj) return;
+
+    obj.set('opacity', Math.max(0, Math.min(1, opacity)));
+    this.canvas.requestRenderAll();
+    this.refreshLayers();
+  }
+
+  selectLayerById(objectId: string): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj || obj.visible === false || obj.selectable === false) return;
+
+    this.canvas.setActiveObject(obj);
+    this.canvas.requestRenderAll();
+  }
+
+  deleteLayerById(objectId: string): void {
+    if (!this.canvas) return;
+    const obj = this.canvas.getObjects().find((o) => (o as any).name === objectId);
+    if (!obj || (obj as any).name === 'bg_image') return;
+
+    this.canvas.remove(obj);
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
+  }
+
+  // ── Template Content Fill ─────────────────────────────────────────
+
+  fillTemplateContent(fills: { layerName: string; text: string }[]): void {
+    if (!this.canvas) return;
+    const objects = this.canvas.getObjects();
+
+    for (const fill of fills) {
+      const obj = objects.find(
+        (o) => o.type === 'textbox' && (o as any).layerName === fill.layerName,
+      ) as fabric.Textbox | undefined;
+
+      if (obj) {
+        obj.set('text', fill.text);
+      }
+    }
+
+    this.canvas.requestRenderAll();
+    this.refreshLayers();
+  }
+
+  swapBackgroundKeepLayout(imageUrl: string, width?: number, height?: number): void {
+    this.setBackgroundImage(imageUrl, width, height, 'cover');
   }
 
   destroy(): void {

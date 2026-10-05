@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -6,11 +6,11 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1320,
-    height: 920,
-    minWidth: 960,
+    width: 1400,
+    height: 900,
+    minWidth: 1024,
     minHeight: 700,
-    title: 'PhotoText Studio',
+    title: 'ToolImage Studio',
     icon: path.join(__dirname, '../public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -42,12 +42,44 @@ function createWindow() {
 
 ipcMain.handle('show-save-dialog', async (_event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, {
-    defaultPath: options.defaultPath || 'anh-xuat.png',
-    filters: options.filters || [{ name: 'Ảnh PNG', extensions: ['png'] }],
+    defaultPath: options?.defaultPath || 'anh-xuat.png',
+    filters: options?.filters || [
+      { name: 'Ảnh PNG (*.png)', extensions: ['png'] },
+      { name: 'Ảnh JPEG (*.jpg, *.jpeg)', extensions: ['jpg', 'jpeg'] },
+      { name: 'Ảnh WebP (*.webp)', extensions: ['webp'] },
+      { name: 'Tệp dự án ToolImage (*.tiproj)', extensions: ['tiproj', 'json'] },
+      { name: 'Tất cả tệp (*.*)', extensions: ['*'] }
+    ],
   });
 
   if (result.canceled) return null;
   return result.filePath;
+});
+
+ipcMain.handle('save-image', async (_event, { dataUrl, defaultName, format }) => {
+  const ext = format === 'jpeg' ? 'jpg' : (format || 'png');
+  const filePath = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: defaultName || `anh-xuat.${ext}`,
+    filters: [
+      { name: `Ảnh ${ext.toUpperCase()}`, extensions: [ext] },
+      { name: 'Tất cả tệp', extensions: ['*'] }
+    ]
+  });
+
+  if (filePath.canceled || !filePath.filePath) return null;
+
+  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
+  await fs.promises.writeFile(filePath.filePath, buffer);
+  return filePath.filePath;
+});
+
+ipcMain.handle('open-file-in-folder', async (_event, filePath) => {
+  if (filePath && fs.existsSync(filePath)) {
+    shell.showItemInFolder(filePath);
+    return true;
+  }
+  return false;
 });
 
 ipcMain.handle('write-file', async (_event, filePath, base64Data) => {
@@ -86,13 +118,16 @@ ipcMain.handle('read-file', async (_event, filePath) => {
   return `data:${mime};base64,${buffer.toString('base64')}`;
 });
 
-// === IPC Handlers: Project Save & Load (.json) ===
+// === IPC Handlers: Project Save & Load (.tiproj / .json) ===
 
 ipcMain.handle('show-save-project-dialog', async (_event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Lưu dự án chỉnh sửa',
-    defaultPath: options.defaultPath || 'du-an.json',
-    filters: options.filters || [{ name: 'Dự án tạo ảnh', extensions: ['json'] }],
+    defaultPath: options?.defaultPath || 'du-an.tiproj',
+    filters: [
+      { name: 'Tệp dự án ToolImage (*.tiproj)', extensions: ['tiproj'] },
+      { name: 'Dự án JSON (*.json)', extensions: ['json'] }
+    ],
   });
 
   if (result.canceled) return null;
@@ -109,8 +144,8 @@ ipcMain.handle('show-open-project-dialog', async () => {
     title: 'Mở dự án cũ',
     filters: [
       {
-        name: 'Dự án tạo ảnh',
-        extensions: ['json'],
+        name: 'Tệp dự án ToolImage (*.tiproj, *.json)',
+        extensions: ['tiproj', 'json'],
       },
     ],
     properties: ['openFile'],

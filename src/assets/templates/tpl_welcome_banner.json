@@ -1,0 +1,99 @@
+{
+  "id": "tpl_welcome_banner",
+  "name": "Khung Chào Mừng Hội Nghị & Gặp Mặt",
+  "category": "ceremony",
+  "thumbnail": "🤝",
+  "description": "Băng rôn chào đón đại biểu, khách quý tham dự hội thảo, tọa đàm và họp mặt chuyên nghiệp.",
+  "recommendedAspectRatios": ["16:9", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "bottom-to-top",
+    "color": "#1E1B4B",
+    "opacity": 60,
+    "heightRatio": 0.55
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.68,
+      "relativeWidth": 0.85,
+      "textConfig": {
+        "text": "CHÀO MỪNG QUÝ ĐẠI BIỂU VỀ THAM DỰ HỘI NGHỊ",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 46,
+          "fontWeight": "800",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#FEF08A"
+        },
+        "ribbon": {
+          "enabled": true,
+          "backgroundColor": "#312E81",
+          "opacity": 90,
+          "paddingX": 24,
+          "paddingY": 10,
+          "borderRadius": 8
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.6)",
+          "blur": 8,
+          "offsetX": 2,
+          "offsetY": 3
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.82,
+      "relativeWidth": 0.7,
+      "textConfig": {
+        "text": "HÀ NỘI, NGÀY 26 THÁNG 03 NĂM 2026",
+        "typography": {
+          "fontFamily": "Be Vietnam Pro",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": false,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 1,
+          "color": "#E0E7FF"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.7)",
+          "blur": 6,
+          "offsetX": 1,
+          "offsetY": 2
+        }
+      }
+    }
+  ]
+}

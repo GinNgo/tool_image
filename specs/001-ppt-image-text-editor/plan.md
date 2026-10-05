@@ -30,7 +30,7 @@ Build a client-side Angular 18 application integrating Fabric.js to allow users 
 
 ## Constitution Check
 
-*Not applicable (Constitution not strictly defined for this project)*
+_Not applicable (Constitution not strictly defined for this project)_
 
 ## Project Structure
 
@@ -69,6 +69,7 @@ src/app/
 ## MVP Scope (Minimum Viable Product)
 
 **Target**: User Story 1 & 2
+
 - Core layout (Studio, Top Toolbar, Sidebar).
 - Fabric.js canvas initialization.
 - Ability to load a local image as canvas background.

@@ -1,0 +1,99 @@
+{
+  "id": "tpl_ceremony_formal_gold",
+  "name": "Lễ Kỷ Niệm & Đại Hội Trang Trọng",
+  "category": "ceremony",
+  "thumbnail": "🏛️",
+  "description": "Phong cách sang trọng với phông chữ có chân Playfair Display, viền vàng kim quý phái.",
+  "recommendedAspectRatios": ["16:9", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "two-sided",
+    "color": "#0B132B",
+    "opacity": 60,
+    "heightRatio": 1.0
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.35,
+      "relativeWidth": 0.75,
+      "textConfig": {
+        "text": "LỄ KỶ NIỆM 50 NĂM NGÀY THÀNH LẬP",
+        "typography": {
+          "fontFamily": "Playfair Display",
+          "fontSize": 50,
+          "fontWeight": "700",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#FBBF24"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": true,
+          "color": "#78350F",
+          "width": 1.5
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.8)",
+          "blur": 12,
+          "offsetX": 2,
+          "offsetY": 4
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.46,
+      "relativeWidth": 0.6,
+      "textConfig": {
+        "text": "XÂY DỰNG - CỐNG HIẾN - PHÁT TRIỂN BỀN VỮNG",
+        "typography": {
+          "fontFamily": "Montserrat",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": true,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 3,
+          "color": "#FEF3C7"
+        },
+        "ribbon": {
+          "enabled": true,
+          "backgroundColor": "#78350F",
+          "opacity": 85,
+          "paddingX": 16,
+          "paddingY": 6,
+          "borderRadius": 4
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.6)",
+          "blur": 6,
+          "offsetX": 1,
+          "offsetY": 2
+        }
+      }
+    }
+  ]
+}

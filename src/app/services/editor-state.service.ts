@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
-import { TextBlock } from '../models/project.model';
+import { TextBlock, LayerInfo } from '../models/project.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EditorStateService {
   readonly activeTextBlock = signal<TextBlock | null>(null);
@@ -10,6 +10,8 @@ export class EditorStateService {
   readonly backgroundImageDimensions = signal<{ width: number; height: number } | null>(null);
   readonly projectTitle = signal<string>('Bản thiết kế mới');
   readonly canvasSize = signal<{ width: number; height: number }>({ width: 1080, height: 1080 });
+  readonly layers = signal<LayerInfo[]>([]);
+  readonly layerPanelOpen = signal<boolean>(true);
 
   setActiveTextBlock(block: TextBlock | null): void {
     this.activeTextBlock.set(block);
@@ -25,5 +27,13 @@ export class EditorStateService {
 
   updateProjectTitle(title: string): void {
     this.projectTitle.set(title);
+  }
+
+  updateLayers(layers: LayerInfo[]): void {
+    this.layers.set(layers);
+  }
+
+  toggleLayerPanel(): void {
+    this.layerPanelOpen.update((v) => !v);
   }
 }

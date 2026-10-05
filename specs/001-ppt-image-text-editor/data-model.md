@@ -3,7 +3,9 @@
 ## Entities
 
 ### Project
+
 Represents a saved document/project.
+
 - `id`: string (UUID or timestamp-based)
 - `title`: string
 - `canvasWidth`: number
@@ -14,7 +16,9 @@ Represents a saved document/project.
 - `updatedAt`: string (ISO date)
 
 ### TextBlock
+
 Represents an individual text layer on the canvas.
+
 - `id`: string (Unique identifier)
 - `text`: string (Content)
 - `x`: number (Position X)
@@ -32,6 +36,7 @@ Represents an individual text layer on the canvas.
 - `shadowBlur`: number
 
 ### FontDefinition
+
 - `name`: string (e.g., 'Montserrat', 'Playfair Display')
 - `fontFamily`: string
 - `category`: 'Sans-serif' | 'Serif' | 'Handwriting' | 'Display'

@@ -10,7 +10,7 @@
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Tải ảnh nền & Thêm hộp chữ tự do phong cách PowerPoint (Priority: P1 - MVP)
 
@@ -21,6 +21,7 @@ Người dùng tải lên một hình ảnh bất kỳ từ máy tính làm hìn
 **Independent Test**: Người dùng tải một ảnh JPG/PNG lên, bấm "Thêm hộp chữ", gõ dòng chữ "Khuyến mãi mùa hè", di chuyển chữ và nhìn thấy chữ hiển thị rõ nét trên ảnh.
 
 **Acceptance Scenarios**:
+
 1. **Given** Người dùng chưa có ảnh nền, **When** Người dùng chọn một file ảnh từ máy tính hoặc kéo thả vào khung vẽ, **Then** Ứng dụng hiển thị ảnh trọn vẹn trong vùng làm việc với tỷ lệ chuẩn.
 2. **Given** Ảnh nền đã hiển thị, **When** Người dùng bấm nút "+ Thêm hộp chữ", **Then** Một hộp văn bản mới xuất hiện trên ảnh với viền chọn (bounding box) tương tự PowerPoint.
 3. **Given** Hộp chữ đang được chọn, **When** Người dùng nhấp đúp chuột, **Then** Hộp chữ chuyển sang chế độ gõ văn bản trực tiếp (inline editing) cho phép nhập tiếng Việt có dấu hoàn chỉnh.
@@ -36,6 +37,7 @@ Người dùng có thể dễ dàng thay đổi kiểu dáng chữ bao gồm: c�
 **Independent Test**: Chọn một hộp chữ bất kỳ, đổi font sang "Montserrat" hoặc "Playfair Display", đổi màu chữ sang vàng và bật in đậm. Toàn bộ chữ cập nhật tức thì.
 
 **Acceptance Scenarios**:
+
 1. **Given** Một hộp chữ đang được chọn, **When** Người dùng chọn một phông từ danh sách font tiếng Việt, **Then** Toàn bộ văn bản trong hộp đổi sang font mới và hiển thị đúng dấu tiếng Việt không bị lỗi font fallback.
 2. **Given** Một hộp chữ đang được chọn, **When** Người dùng đổi cỡ chữ hoặc bấm nút tăng/giảm cỡ, **Then** Kích thước chữ tăng/giảm mượt mà và khung chứa tự co giãn tương ứng.
 3. **Given** Một hộp chữ, **When** Người dùng bật hiệu ứng Đổ bóng (Shadow) hoặc Viền chữ (Stroke), **Then** Chữ có độ tương phản nổi bật trên nền ảnh dù nền ảnh sáng hay tối.
@@ -51,6 +53,7 @@ Người dùng có thể thao tác với hộp chữ hệt như trong PowerPoint
 **Independent Test**: Kéo điểm neo bên phải của hộp chữ hẹp lại, quan sát thấy các từ tự động ngắt dòng hợp lý. Dùng phím mũi tên trên bàn phím di chuyển chữ nhích từng pixel.
 
 **Acceptance Scenarios**:
+
 1. **Given** Hộp chữ đang được chọn, **When** Người dùng kéo handle cạnh trái hoặc cạnh phải, **Then** Chiều rộng hộp chữ thay đổi và các dòng chữ tự động bẻ dòng (word wrap).
 2. **Given** Hộp chữ đang được chọn, **When** Người dùng bấm phím mũi tên (Arrow keys), **Then** Hộp chữ di chuyển chính xác 2px (hoặc 10px khi giữ Shift).
 3. **Given** Có nhiều hộp chữ trên ảnh, **When** Người dùng nhấp vào hộp chữ nào, **Then** Hộp chữ đó lập tức được kích hoạt và thanh công cụ hiển thị định dạng tương ứng của hộp chữ đó.
@@ -66,6 +69,7 @@ Người dùng có thể lưu dự án hiện tại (dưới dạng file dự á
 **Independent Test**: Bố trí 2 hộp chữ lên ảnh, bấm "Lưu bản thảo", sau đó bấm "Đổi ảnh nền" chọn một ảnh khác; 2 hộp chữ vẫn giữ nguyên toạ độ và nội dung trên nền ảnh mới.
 
 **Acceptance Scenarios**:
+
 1. **Given** Người dùng đã bố trí các hộp chữ, **When** Người dùng bấm "Lưu dự án", **Then** File cấu hình dự án (.json) được tải về máy hoặc lưu vào bộ nhớ trình duyệt.
 2. **Given** File dự án đã lưu, **When** Người dùng mở file dự án, **Then** Toàn bộ ảnh nền và các hộp chữ được phục hồi chính xác 100%.
 3. **Given** Dự án đang có các hộp chữ, **When** Người dùng bấm "Đổi ảnh nền" và tải ảnh mới lên, **Then** Ảnh nền mới thay thế ảnh cũ, các hộp chữ giữ nguyên vị trí, kiểu dáng và nội dung.
@@ -81,6 +85,7 @@ Người dùng có thể xuất tác phẩm hoàn thiện ra tệp hình ảnh �
 **Independent Test**: Bấm nút "Xuất ảnh", kiểm tra file ảnh tải về có đầy đủ ảnh nền và các dòng chữ sắc nét, đúng tỷ lệ.
 
 **Acceptance Scenarios**:
+
 1. **Given** Bố cục hoàn chỉnh trên khung vẽ, **When** Người dùng bấm "Xuất ảnh PNG", **Then** Tệp ảnh PNG chất lượng cao được tạo và tải về máy tính trong vòng 2 giây.
 
 ---
@@ -94,7 +99,7 @@ Người dùng có thể xuất tác phẩm hoàn thiện ra tệp hình ảnh �
 
 ---
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -117,7 +122,7 @@ Người dùng có thể xuất tác phẩm hoàn thiện ra tệp hình ảnh �
 
 ---
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

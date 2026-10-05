@@ -1,0 +1,99 @@
+{
+  "id": "tpl_quote_artistic",
+  "name": "Trích Dẫn Nghệ Thuật Thanh Lịch",
+  "category": "quote",
+  "thumbnail": "✨",
+  "description": "Bố cục nghệ thuật tinh tế, font nghiêng nhẹ nhàng có bóng mờ, phù hợp châm ngôn và lời chúc.",
+  "recommendedAspectRatios": ["1:1", "4:5", "original"],
+  "dimmerOverlay": {
+    "enabled": true,
+    "type": "solid",
+    "color": "#000000",
+    "opacity": 35,
+    "heightRatio": 1.0
+  },
+  "defaultLayers": [
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.45,
+      "relativeWidth": 0.8,
+      "textConfig": {
+        "text": "“Hành trình vạn dặm bắt đầu từ một bước chân.”",
+        "typography": {
+          "fontFamily": "Playfair Display",
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "fontStyle": "italic",
+          "underline": false,
+          "uppercase": false,
+          "align": "center",
+          "lineHeight": 1.4,
+          "letterSpacing": 1,
+          "color": "#FFFFFF"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.7)",
+          "blur": 10,
+          "offsetX": 2,
+          "offsetY": 3
+        }
+      }
+    },
+    {
+      "type": "text",
+      "relativeX": 0.5,
+      "relativeY": 0.6,
+      "relativeWidth": 0.4,
+      "textConfig": {
+        "text": "— Lão Tử",
+        "typography": {
+          "fontFamily": "Be Vietnam Pro",
+          "fontSize": 24,
+          "fontWeight": "normal",
+          "fontStyle": "normal",
+          "underline": false,
+          "uppercase": false,
+          "align": "center",
+          "lineHeight": 1.2,
+          "letterSpacing": 2,
+          "color": "#E2E8F0"
+        },
+        "ribbon": {
+          "enabled": false,
+          "backgroundColor": "#000000",
+          "opacity": 0,
+          "paddingX": 0,
+          "paddingY": 0,
+          "borderRadius": 0
+        },
+        "stroke": {
+          "enabled": false,
+          "color": "#000000",
+          "width": 0
+        },
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(0,0,0,0.6)",
+          "blur": 6,
+          "offsetX": 1,
+          "offsetY": 2
+        }
+      }
+    }
+  ]
+}
